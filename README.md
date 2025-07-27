@@ -170,6 +170,3 @@ GeminiAPIとvoicevoxを使用して、デスクトップマスコットがおし
 	A1. config.iniの[UI]セクションにあるTRANSPARENCY_TOLERANCEの値を少しずつ変えてみてください。（例: 50 -> 60）。また、キャラクター個別のcharacter.iniにTRANSPARENT_COLORやEDGE_COLORを記述することで、キャラごとに色を指定できます。
 	A2. キャラクター個別の設定も可能です。characters/(キャラ名)/character.infoにTRANSPARENT_COLORやEDGE_COLORを追加することで、キャラクターごとに透過色や縁色を指定できます。
 =======
-# AI_DesktopMascot_cocococo
-GeminiAPIとvoicevoxを使用して、デスクトップマスコットがおしゃべりしてくれるソフトウェアです
->>>>>>> b40a3ab552e8858e87a7d3a82e9dcf9fdbbeebb8
