@@ -1,0 +1,2 @@
+# AI_DesktopMascot_cocococo
+GeminiAPIとvoicevoxを使用して、デスクトップマスコットがおしゃべりしてくれるソフトウェアです
