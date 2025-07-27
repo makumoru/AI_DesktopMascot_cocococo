@@ -209,3 +209,4 @@ __marimo__/
 # 自分で追加した除外ルール
 /config.ini
 logs/
+Visual Studio Code Open.exe
