@@ -1,0 +1,3 @@
+以下のコマンドを実行してください。
+
+pip install -r requirements.txt
