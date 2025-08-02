@@ -88,7 +88,7 @@ class CharacterController:
         msg_section = 'SYSTEM_MESSAGES'
 
         # デフォルトのメッセージを定義
-        default_msg_empty = "うーん、うまく言葉が出てきません。"
+        default_msg_empty = "うーん、うまく言葉が出てきません。質問の内容がAIのルールに触れてしまったのかもしれません。表現を少し変えて、もう一度試していただけますか？"
         default_msg_timeout = "考えるのに時間がかかりすぎているみたいです…。ネットワークやAPIキーの設定を確認してみてください。"
         default_msg_all_failed = "すべてのAIモデルが今、使えないみたいです。少し待ってからもう一度試してみてください。"
         default_msg_specific_failed = "モデル'{model_key}'との通信でエラーが起きました。"

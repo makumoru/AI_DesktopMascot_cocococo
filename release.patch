@@ -1,0 +1,77 @@
+diff --git "a/characters/\343\202\270\343\202\247\343\203\237\343\203\274/character.ini" "b/characters/\343\202\270\343\202\247\343\203\237\343\203\274/character.ini"
+index cbfa5d0..8e39e17 100644
+--- "a/characters/\343\202\270\343\202\247\343\203\237\343\203\274/character.ini"
++++ "b/characters/\343\202\270\343\202\247\343\203\237\343\203\274/character.ini"
+@@ -28,7 +28,7 @@ EDGE_COLOR = #838383
+ ; 設定しない場合は、デフォルトのセリフが使用されます。
+ [SYSTEM_MESSAGES]
+ ; Geminiが何も返事せず「虚無を返信」してきた際のエラーメッセージです。だいたいGemini側のフィルターに引っかかってます。
+-ON_EMPTY_RESPONSE = 申し訳ありません…、うまく言葉にできません…。
++ON_EMPTY_RESPONSE = 申し訳ありません…、うまく言葉にできません…。質問の内容がAIのルールに触れてしまったのかもしれません。表現を少し変えて、もう一度試していただけますか？
+ ; Geminiからの返事が返って来ずタイムアウトした際のエラーメッセージです。APIキーが間違ってるか通信の問題が多いです。
+ ON_API_TIMEOUT = 少々考えすぎてしまいました…。ネットワークが混んでるのかもしれません。
+ ; 試せるAPI全部に通信してもエラーが返ってきた際のエラーメッセージです。滅多にありませんが無料枠のレート範囲を超えてるとかです。
+diff --git "a/characters/\343\203\216\343\203\257\343\203\274\343\203\253/character.ini" "b/characters/\343\203\216\343\203\257\343\203\274\343\203\253/character.ini"
+index e0ff429..f693885 100644
+--- "a/characters/\343\203\216\343\203\257\343\203\274\343\203\253/character.ini"
++++ "b/characters/\343\203\216\343\203\257\343\203\274\343\203\253/character.ini"
+@@ -28,7 +28,7 @@ EDGE_COLOR = #838383
+ ; 設定しない場合は、デフォルトのセリフが使用されます。
+ [SYSTEM_MESSAGES]
+ ; Geminiが何も返事せず「虚無を返信」してきた際のエラーメッセージです。だいたいGemini側のフィルターに引っかかってます。
+-ON_EMPTY_RESPONSE = 申し訳ありません…、うまく言葉にできません…。
++ON_EMPTY_RESPONSE = 申し訳ありません…、うまく言葉にできません…。質問の内容がAIのルールに触れてしまったのかもしれません。表現を少し変えて、もう一度試していただけますか？
+ ; Geminiからの返事が返って来ずタイムアウトした際のエラーメッセージです。APIキーが間違ってるか通信の問題が多いです。
+ ON_API_TIMEOUT = 少々考えすぎてしまいました…。ネットワークが混んでるのかもしれません。
+ ; 試せるAPI全部に通信してもエラーが返ってきた際のエラーメッセージです。滅多にありませんが無料枠のレート範囲を超えてるとかです。
+diff --git "a/characters/\345\233\233\345\233\275\343\202\201\343\201\237\343\202\223/character.ini" "b/characters/\345\233\233\345\233\275\343\202\201\343\201\237\343\202\223/character.ini"
+index bb33aab..2f2f7a7 100644
+--- "a/characters/\345\233\233\345\233\275\343\202\201\343\201\237\343\202\223/character.ini"
++++ "b/characters/\345\233\233\345\233\275\343\202\201\343\201\237\343\202\223/character.ini"
+@@ -28,7 +28,7 @@ EDGE_COLOR = #838383
+ ; 設定しない場合は、デフォルトのセリフが使用されます。
+ [SYSTEM_MESSAGES]
+ ; Geminiが何も返事せず「虚無を返信」してきた際のエラーメッセージです。だいたいGemini側のフィルターに引っかかってます。
+-ON_EMPTY_RESPONSE = う～ん…うまく言葉が出てこないわね…。
++ON_EMPTY_RESPONSE = う～ん…うまく言葉が出てこないわね…。質問の内容がAIのルールに触れてしまったのかもしれませんわ。表現を少し変えて、もう一度試してみて？
+ ; Geminiからの返事が返って来ずタイムアウトした際のエラーメッセージです。APIキーが間違ってるか通信の問題が多いです。
+ ON_API_TIMEOUT = 少し長考してしまっていますわ……。いえ、ネットワークが混んでるのかも……？
+ ; 試せるAPI全部に通信してもエラーが返ってきた際のエラーメッセージです。滅多にありませんが無料枠のレート範囲を超えてるとかです。
+diff --git "a/characters/\346\230\245\346\227\245\351\203\250\343\201\244\343\202\200\343\201\216/character.ini" "b/characters/\346\230\245\346\227\245\351\203\250\343\201\244\343\202\200\343\201\216/character.ini"
+index 0603f56..5c4924e 100644
+--- "a/characters/\346\230\245\346\227\245\351\203\250\343\201\244\343\202\200\343\201\216/character.ini"
++++ "b/characters/\346\230\245\346\227\245\351\203\250\343\201\244\343\202\200\343\201\216/character.ini"
+@@ -28,7 +28,7 @@ EDGE_COLOR = #838383
+ ; 設定しない場合は、デフォルトのセリフが使用されます。
+ [SYSTEM_MESSAGES]
+ ; Geminiが何も返事せず「虚無を返信」してきた際のエラーメッセージです。だいたいGemini側のフィルターに引っかかってます。
+-ON_EMPTY_RESPONSE = うーん、なんて言ったらいいのかなぁ…。わかんないなぁ…。
++ON_EMPTY_RESPONSE = うーん、なんて言ったらいいのかなぁ…。わかんないなぁ…。質問の内容がAIのルールに引っかかったかも？表現を少し変えて、もう一度試してみてね。
+ ; Geminiからの返事が返って来ずタイムアウトした際のエラーメッセージです。APIキーが間違ってるか通信の問題が多いです。
+ ON_API_TIMEOUT = ごめん、ちょっと考えすぎちゃった。ネットワークが混んでるのかも？
+ ; 試せるAPI全部に通信してもエラーが返ってきた際のエラーメッセージです。滅多にありませんが無料枠のレート範囲を超えてるとかです。
+diff --git a/src/character_controller.py b/src/character_controller.py
+index 928bc4d..8a6d5b5 100644
+--- a/src/character_controller.py
++++ b/src/character_controller.py
+@@ -88,7 +88,7 @@ class CharacterController:
+         msg_section = 'SYSTEM_MESSAGES'
+ 
+         # デフォルトのメッセージを定義
+-        default_msg_empty = "うーん、うまく言葉が出てきません。"
++        default_msg_empty = "うーん、うまく言葉が出てきません。質問の内容がAIのルールに触れてしまったのかもしれません。表現を少し変えて、もう一度試していただけますか？"
+         default_msg_timeout = "考えるのに時間がかかりすぎているみたいです…。ネットワークやAPIキーの設定を確認してみてください。"
+         default_msg_all_failed = "すべてのAIモデルが今、使えないみたいです。少し待ってからもう一度試してみてください。"
+         default_msg_specific_failed = "モデル'{model_key}'との通信でエラーが起きました。"
+diff --git a/src/desktop_mascot.py b/src/desktop_mascot.py
+index d85960c..e0e5bc5 100644
+--- a/src/desktop_mascot.py
++++ b/src/desktop_mascot.py
+@@ -826,6 +826,7 @@ class DesktopMascot:
+         self.is_processing_lock.acquire()
+ 
+         try:
++            self.reset_cool_time()
+             self.is_in_rally, self.current_rally_count = False, 0
+             speaker = random.choice(self.characters)
+ 

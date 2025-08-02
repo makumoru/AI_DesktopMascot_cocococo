@@ -826,6 +826,7 @@ class DesktopMascot:
         self.is_processing_lock.acquire()
 
         try:
+            self.reset_cool_time()
             self.is_in_rally, self.current_rally_count = False, 0
             speaker = random.choice(self.characters)
 
