@@ -210,3 +210,8 @@ __marimo__/
 /config.ini
 logs/
 Visual Studio Code Open.exe
+character.ini.txt
+launch.json
+position.ini
+conversation_log.log
+favorability.ini

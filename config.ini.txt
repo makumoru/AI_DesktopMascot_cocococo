@@ -93,7 +93,7 @@ IS_LEFT_SIDE = False
 ; このキャラクターを有効にするか (True/False)。Falseにすると1人モードで起動します。
 ENABLED = False
 ; charactersフォルダ内のフォルダ名を指定
-DIRECTORY = 四国めたん
+DIRECTORY = ノワール
 ; 画面の左側に表示するかどうか (Trueにすると、キャラが左側に配置され画像が左右反転します)
 IS_LEFT_SIDE = True
 
@@ -107,7 +107,8 @@ IS_LEFT_SIDE = True
 ; キャラクターウィンドウの横幅を、プライマリスクリーン全体の幅に対する比率で指定します。
 ; 例: 0.2 は画面幅の20%のサイズになります。
 WINDOW_WIDTH_RATIO = 0.2
-
+; カラーテーマの種類(ファイル名で表記)
+theme = default_light
 ; 画像の透過色 (デフォルトではこの色を透明にします)。
 TRANSPARENT_COLOR = #ff00ff
 ; 透過部分との境界線の色(デフォルトではこの色を使用します)。
@@ -129,9 +130,11 @@ CURSOR_IMAGE_PATH = images/cursors
 CLICK_TIME_THRESHOLD_MS = 300
 CLICK_MOVE_THRESHOLD_PIXELS = 5
 ; アプリケーション起動時の「常に手前に表示」の状態 (True/False)
-ALWAYS_ON_TOP = False
+ALWAYS_ON_TOP = True
 ; アプリケーション起動時の「自動発話」の状態 (True/False)
 ENABLE_AUTO_SPEECH = True
+; アプリケーション起動時の「スケジュール通知」の状態 (True/False)
+ENABLE_SCHEDULES = True
 ; アプリケーション起動時の「音声(ミュート)」の状態 (True/False)。Trueで音声ON、Falseでミュート。
 ENABLE_SOUND = True
 

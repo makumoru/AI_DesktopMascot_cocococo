@@ -11,7 +11,7 @@ except ImportError:
 
 class BehaviorManager:
     """
-    キャラクターの自律行動（自動発話、時報、離席判定）のスケジューリングと
+    キャラクターの自律行動（自動発話、スケジュール、離席判定）のスケジューリングと
     トリガーを担当するクラス。
     """
     def __init__(self, app):
@@ -27,7 +27,7 @@ class BehaviorManager:
     def start(self):
         """全てのスケジューリングとリスナーを開始します。"""
         self.schedule_updates()
-        self.schedule_time_signal()
+        self.schedule_minute_tasks() # schedule_time_signal から変更
         self.schedule_api_timeout_check()
         self.start_activity_listener()
 
@@ -40,10 +40,11 @@ class BehaviorManager:
         self.check_auto_speech()
         self.root.after(20000, self.schedule_updates)
 
-    def schedule_time_signal(self):
-        """60秒ごとに定期実行され、時報をチェックします。"""
-        self.check_time_signal()
-        self.root.after(60000, self.schedule_time_signal)
+    def schedule_minute_tasks(self):
+        """10秒ごとに定期実行され、スケジュールをチェックします。"""
+        self.app.check_schedules() # DesktopMascot側の新メソッドを呼び出す
+        self.app.check_for_date_change() # 日付変更チェック
+        self.root.after(10000, self.schedule_minute_tasks)
         
     def schedule_api_timeout_check(self):
         """1秒ごとに定期実行され、APIの応答タイムアウトを監視します。"""
@@ -79,17 +80,7 @@ class BehaviorManager:
         if not self.app.is_auto_speech_enabled.get(): return
         if self.app.is_user_away or self.app.is_in_rally or self.app.is_processing_lock.locked(): return
         if not self.app.characters: return
-        if time.localtime().tm_min in [0, 1]: return # 時報の直後は実行しない
+        # 時報との重複を避けるための行を削除
         if time.time() - self.app.last_interaction_time > self.app.auto_speech_cool_time:
             # 実際のプロンプト生成とリクエストはDesktopMascotに委譲
             self.app.trigger_auto_speech()
-
-    def check_time_signal(self):
-        """毎時0分に時報のトリガーを引きます。"""
-        if self.app.is_user_away or self.app.is_in_rally or self.app.is_processing_lock.locked(): return
-        if not self.app.characters: return
-        
-        current_time = time.localtime()
-        if current_time.tm_min == 0 and current_time.tm_hour != self.app.last_time_signal_hour:
-            # 実際のプロンプト生成とリクエストはDesktopMascotに委譲
-            self.app.trigger_time_signal()

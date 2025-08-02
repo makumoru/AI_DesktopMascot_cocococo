@@ -12,19 +12,21 @@ class ConversationLogManager:
     LOG_FILE_NAME = "conversation_log.log" # ログファイル名
     LOG_HISTORY_LIMIT = 20 # AIに渡す会話履歴の最大件数
 
-    def __init__(self, log_dir, character_map):
+    def __init__(self, character_dir_path, character_map):
         """
-        ConversationLogManagerを初期化します。
+        【変更】特定のキャラクターのログマネージャを初期化します。
 
         Args:
-            log_dir (str): ログファイルを保存するディレクトリのパス。
-            character_map (dict): キャラクターIDと名前を対応させる辞書。ログを人間可読にするために使用。
+            character_dir_path (str): このログが属するキャラクターのディレクトリパス (例: 'characters/ジェミー')
+            character_map (dict): キャラクターIDと名前を対応させる辞書。
         """
-        self.log_dir = log_dir
-        self.log_file_path = os.path.join(self.log_dir, self.LOG_FILE_NAME)
-        self.character_map = character_map # {'CHAR_1': 'ずんだもん', ...}
-        self.lock = threading.Lock() # 複数スレッドからの同時書き込みを防ぐためのロック
-        os.makedirs(self.log_dir, exist_ok=True) # ログディレクトリがなければ作成
+        # キャラクターごとのログファイルパスを生成
+        self.log_file_path = os.path.join(character_dir_path, self.LOG_FILE_NAME)
+        self.character_map = character_map
+        self.lock = threading.Lock()
+        
+        # ログファイルが存在するディレクトリを確実に作成
+        os.makedirs(os.path.dirname(self.log_file_path), exist_ok=True)
 
     def add_entry(self, actor_id, target_id, action_type, content):
         """
@@ -38,9 +40,11 @@ class ConversationLogManager:
         """
         with self.lock:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            actor_name = self.character_map.get(actor_id, actor_id)
+            target_name = self.character_map.get(target_id, target_id)
             # ログファイルはカンマ区切りなため、コンテンツ内の改行やカンマを安全な文字列に置換（エスケープ）します。
             safe_content = content.replace(',', '<comma>').replace('\n', '<br>')
-            log_line = f"{timestamp},{actor_id},{target_id},{action_type},{safe_content}\n"
+            log_line = f"{timestamp},{actor_name},{target_name},{action_type},{safe_content}\n"
             try:
                 with open(self.log_file_path, 'a', encoding='utf-8') as f:
                     f.write(log_line)
@@ -74,20 +78,15 @@ class ConversationLogManager:
                 parts = line.strip().split(',', 4)
                 if len(parts) < 5: continue
                 
-                _timestamp, actor_id, target_id, action_type, content = parts
-                # エスケープされた文字を元の文字に戻します。
+                _timestamp, actor_name, target_name, action_type, content = parts
                 content = content.replace('<comma>', ',').replace('<br>', '\n')
-
-                # IDをキャラクター名に変換します。
-                actor_name = self.character_map.get(actor_id, actor_id)
-                target_name = self.character_map.get(target_id, target_id)
                 
                 # ログの種類に応じて、整形された文字列を生成します。
                 entry = ""
                 if action_type == 'INPUT':
                     entry = f"ユーザー({target_name}へ): {content}"
                 elif action_type == 'SPEECH':
-                    if target_id == 'USER':
+                    if target_name == 'ユーザー':
                         entry = f"{actor_name}: {content}"
                     else:
                         entry = f"{actor_name}({target_name}へ): {content}"

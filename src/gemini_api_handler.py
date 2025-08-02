@@ -285,6 +285,10 @@ class GeminiAPIHandler:
                 
                 print(f"[{character.name}] 応答取得: テキスト='{final_text[:50]}...', 関数呼び出し={len(function_calls)}件")
                 
+                if(len(function_calls)>0):
+                    for item in function_calls:
+                        print(item)
+
                 # 7. 成功時の処理
                 self.log_manager.record_usage(current_model_key, character.name, message_type)
                 # 解析結果をキャラクターコントローラーに渡して後続処理を依頼
@@ -299,9 +303,10 @@ class GeminiAPIHandler:
             except Exception as e:
                 # その他の予期せぬエラー
                 print(f"致命的なエラー: モデル '{current_model_key}' でのAPI呼び出し中に予期せぬエラーが発生しました: {e}")
-                character.handle_gemini_response(f"モデル'{current_model_key}'との通信でエラーが起きました。", [])
+                error_message = character.msg_on_specific_model_failed.format(model_key=current_model_key)
+                character.handle_gemini_response(error_message, [])
                 return # 回復不能なエラーなので処理を終了
         
         # 全てのモデルで失敗した場合
         print("全モデルでエラーまたは上限超過のため、処理を中断します。")
-        character.handle_gemini_response("すべてのAIモデルが今、使えないみたいです。少し待ってからもう一度試してみてください。", [])
+        character.handle_gemini_response(character.msg_on_all_models_failed, [])

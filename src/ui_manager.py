@@ -5,6 +5,7 @@ from tkinter import messagebox
 import threading
 import os
 
+from configparser import ConfigParser, NoSectionError, NoOptionError 
 try:
     from pystray import Icon as TrayIcon, Menu as TrayMenu, MenuItem as TrayMenuItem
     from PIL import Image
@@ -36,11 +37,15 @@ class UIManager:
         # --- 機能設定メニュー ---
         self.context_menu.add_command(label="表示/非表示", command=self.app.toggle_visibility)
         self.context_menu.add_checkbutton(label="常に手前に表示", variable=self.app.is_always_on_top)
+        self.theme_menu = tk.Menu(self.context_menu, tearoff=0)
+        self.context_menu.add_cascade(label="カラーテーマ", menu=self.theme_menu)
         self.context_menu.add_command(label="最前列に移動", command=lambda: self.app.bring_to_front())
         self.context_menu.add_separator()
         self.context_menu.add_checkbutton(label="自動発話を有効にする", variable=self.app.is_auto_speech_enabled)
         self.cool_time_menu = tk.Menu(self.context_menu, tearoff=0)
         self.context_menu.add_cascade(label="自動発話の間隔", menu=self.cool_time_menu)
+        self.context_menu.add_checkbutton(label="スケジュール通知を有効にする", variable=self.app.is_schedule_enabled)
+        self.context_menu.add_command(label="スケジュール管理...", command=self.app.open_schedule_editor)
         self.context_menu.add_checkbutton(label="音声再生", variable=self.app.is_sound_enabled)
         self.context_menu.add_separator()
         
@@ -54,7 +59,8 @@ class UIManager:
         self.context_menu.add_cascade(label="API残回数 (2.0系)", menu=self.api_status_menu_2)
         self.api_status_menu_2.add_command(label="Flash: -", state="disabled")
         self.api_status_menu_2.add_command(label="Flash-Lite: -", state="disabled")
-        
+        self.context_menu.add_command(label="API接続設定...", command=self.app.open_api_settings_editor)
+
         self.context_menu.add_separator()
         self.context_menu.add_checkbutton(label="思考モード (Pro使用)", variable=self.app.is_pro_mode)
         
@@ -67,11 +73,23 @@ class UIManager:
         self.context_menu.add_separator()
         self.costume_menu = tk.Menu(self.context_menu, tearoff=0)
         self.context_menu.add_cascade(label="衣装変更", menu=self.costume_menu)
+        self.character_change_menu = tk.Menu(self.context_menu, tearoff=0)
+        self.position_menu = tk.Menu(self.context_menu, tearoff=0)
+        self.position_menu.add_command(label="左に寄せる", command=lambda: self.context_menu_target_char.move_to_side('left'))
+        self.position_menu.add_command(label="右に寄せる", command=lambda: self.context_menu_target_char.move_to_side('right'))
+        self.position_menu.add_separator()
+        self.position_menu.add_command(label="左右反転", command=lambda: self.context_menu_target_char.flip_character())
+        self.context_menu.add_cascade(label="位置調整", menu=self.position_menu)
+        self.context_menu.add_command(label="お休みさせる", command=lambda: self.app.dismiss_character(self.context_menu_target_char))
+        self.context_menu.add_cascade(label="キャラクター変更", menu=self.character_change_menu)
+        self.character_add_menu = tk.Menu(self.context_menu, tearoff=0)
+        self.context_menu.add_cascade(label="キャラクター追加", menu=self.character_add_menu)
         
         self.context_menu.add_separator()
-        self.context_menu.add_command(label="会話ログをクリア", command=self.app.clear_conversation_log)
+        self.context_menu.add_command(label="会話ログをクリア", command=lambda: self.app.clear_log_for_character(self.context_menu_target_char))
         self.context_menu.add_separator()
-        self.context_menu.add_command(label="再起動", command=self.app.restart_app)
+        # ここここの構造とpyinstallerとの相性が悪すぎるのか何やっても安全な再起動ができなかった。一時封印処置。
+        # self.context_menu.add_command(label="再起動", command=self.app.restart_app)
         self.context_menu.add_command(label="終了", command=self.app.exit_app)
 
     def _setup_tray_icon(self):
@@ -126,6 +144,12 @@ class UIManager:
             ),
             TrayMenuItem('自動発話の間隔', TrayMenu(create_cool_time_submenu)),
             TrayMenuItem(
+                'スケジュール通知を有効にする',
+                lambda: self.app.is_schedule_enabled.set(not self.app.is_schedule_enabled.get()),
+                checked=lambda item: self.app.is_schedule_enabled.get()
+            ),
+            TrayMenuItem('スケジュール管理...', self.app.open_schedule_editor),
+            TrayMenuItem(
                 '音声再生',
                 lambda: self.app.is_sound_enabled.set(not self.app.is_sound_enabled.get()),
                 checked=lambda item: self.app.is_sound_enabled.get()
@@ -143,9 +167,10 @@ class UIManager:
                 enabled=lambda item: self.app.screenshot_handler.is_available
             ),
             TrayMenu.SEPARATOR,
-            TrayMenuItem('会話ログをクリア', self.app.clear_conversation_log),
+            TrayMenuItem('場の全員の会話ログをクリア', self.app.clear_all_logs),
             TrayMenu.SEPARATOR,
-            TrayMenuItem('再起動', self.app.restart_app),
+            # ここここの構造とpyinstallerとの相性が悪すぎるのか何やっても安全な再起動ができなかった。一時封印処置。
+            # TrayMenuItem('再起動', self.app.restart_app),
             TrayMenuItem('終了', self.app.exit_app)
         ])
         
@@ -168,11 +193,28 @@ class UIManager:
         if not target_char: return
         self.context_menu_target_char = target_char
         self.app.context_menu_target_char = target_char # DesktopMascotにも通知
-        
+        self.update_theme_menu()
+
         self.update_api_status_menu()
         self.update_capture_target_menu()
         self.update_costume_menu()
         self.update_cool_time_menu()
+        self.update_character_change_menu() 
+        self.update_character_add_menu()
+        
+        is_single_mode = len(self.app.characters) <= 1
+        # bool()でTrue/Falseに変換し、可読性を高める
+        available_chars_exist = bool(self.app.get_available_change_characters())
+
+        # 「お休みさせる」は二人モードの時だけ有効
+        self.context_menu.entryconfig("お休みさせる", state="normal" if not is_single_mode else "disabled")
+        
+        # 「キャラクター変更」は交代可能なキャラが存在すれば、常に有効
+        self.context_menu.entryconfig("キャラクター変更", state="normal" if available_chars_exist else "disabled")
+        
+        # 「キャラクター追加」は交代可能なキャラがいて、かつ一人モードの時だけ有効
+        can_add = available_chars_exist and is_single_mode
+        self.context_menu.entryconfig("キャラクター追加", state="normal" if can_add else "disabled")
 
         try:
             self.context_menu.tk_popup(event.x_root, event.y_root)
@@ -214,6 +256,82 @@ class UIManager:
             if available_keys:
                 self.app.selected_capture_target_key.set(available_keys[0])
 
+    def update_character_add_menu(self):
+        """キャラクター追加メニューを動的に生成・更新します。"""
+        self.character_add_menu.delete(0, "end")
+        
+        # 「get_available_change_characters」は「現在画面にいないキャラ」を返すので、この用途に最適
+        available_chars = self.app.get_available_change_characters()
+        
+        if not available_chars:
+            return
+
+        for char_dir in available_chars:
+            display_name = char_dir
+            char_ini_path = os.path.join('characters', char_dir, 'character.ini')
+            
+            try:
+                if os.path.exists(char_ini_path):
+                    config = ConfigParser()
+                    config.read(char_ini_path, encoding='utf-8')
+                    if config.has_section('INFO'):
+                        system_name = config.get('INFO', 'SYSTEM_NAME', fallback='').strip()
+                        if system_name:
+                            display_name = system_name
+                        else:
+                            character_name = config.get('INFO', 'CHARACTER_NAME', fallback='').strip()
+                            if character_name:
+                                display_name = character_name
+            except Exception as e:
+                print(f"警告: {char_ini_path} の読み込み中にエラーが発生しました。: {e}")
+
+            self.character_add_menu.add_command(
+                label=display_name,
+                command=lambda new_dir=char_dir: self.app.add_character(new_dir)
+            )
+
+    def update_character_change_menu(self):
+        """キャラクター変更メニューを動的に生成・更新します。"""
+        self.character_change_menu.delete(0, "end")
+        
+        available_chars = self.app.get_available_change_characters()
+        target_char = self.context_menu_target_char
+
+        if not available_chars or not target_char:
+            return
+
+        for char_dir in available_chars:
+            display_name = char_dir  # 最悪の場合のフォールバック名
+            char_ini_path = os.path.join('characters', char_dir, 'character.ini')
+            
+            try:
+                if os.path.exists(char_ini_path):
+                    config = ConfigParser()
+                    config.read(char_ini_path, encoding='utf-8')
+                    
+                    # [INFO] セクションの存在を確認
+                    if config.has_section('INFO'):
+                        # 1. SYSTEM_NAME を取得試行（値が空でないかstrip()でチェック）
+                        system_name = config.get('INFO', 'SYSTEM_NAME', fallback='').strip()
+                        
+                        if system_name:
+                            display_name = system_name
+                        else:
+                            # 2. SYSTEM_NAME がない、または空の場合、CHARACTER_NAME を取得
+                            character_name = config.get('INFO', 'CHARACTER_NAME', fallback='').strip()
+                            if character_name:
+                                display_name = character_name
+                            # 両方ない、または空の場合は、初期値のディレクトリ名が使われる
+            
+            except Exception as e:
+                # iniファイルの解析中に何か問題があれば警告を出し、ディレクトリ名で続行
+                print(f"警告: {char_ini_path} の読み込み中にエラーが発生しました。: {e}")
+
+            self.character_change_menu.add_command(
+                label=display_name,
+                command=lambda new_dir=char_dir: self.app.change_character(target_char.original_id, new_dir)
+            )
+
     def update_costume_menu(self):
         """右クリックされたキャラクターの衣装変更メニューを動的に生成・更新します。"""
         char = self.context_menu_target_char
@@ -242,4 +360,36 @@ class UIManager:
                 variable=self.app.cool_time_setting_var,
                 value=label,
                 command=lambda l=label: self.app._set_cool_time(l)
+            )
+
+    def update_theme_menu(self):
+        """カラーテーマ選択メニューを動的に生成・更新します。"""
+        self.theme_menu.delete(0, "end")
+        
+        # 現在の設定値を更新
+        current_theme = self.app.config.get('UI', 'theme', fallback='')
+        self.app.theme_setting_var.set(current_theme)
+
+        # 利用可能なテーマリストを取得
+        available_themes = self.app.theme_manager.get_available_themes()
+
+        # デフォルトテーマの選択肢を追加
+        self.theme_menu.add_radiobutton(
+            label="デフォルト (薄黄色)",
+            variable=self.app.theme_setting_var,
+            value="",
+            command=lambda: self.app.set_theme("")
+        )
+        self.theme_menu.add_separator()
+
+        if not available_themes:
+            self.theme_menu.add_command(label="(テーマファイルなし)", state="disabled")
+            return
+
+        for theme_name in available_themes:
+            self.theme_menu.add_radiobutton(
+                label=theme_name,
+                variable=self.app.theme_setting_var,
+                value=theme_name,
+                command=lambda t=theme_name: self.app.set_theme(t)
             )

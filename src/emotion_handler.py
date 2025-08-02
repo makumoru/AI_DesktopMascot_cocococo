@@ -15,7 +15,7 @@ class EmotionHandler:
     """
     LIP_SYNC_INTERVAL_MS = 250
 
-    def __init__(self, root, config, char_config, character_controller, window_width, tolerance, edge_color, is_flipped):
+    def __init__(self, root, toplevel_window, config, char_config, character_controller, window_width, tolerance, edge_color, is_flipped):
         """
         EmotionHandlerを初期化します。
 
@@ -30,6 +30,7 @@ class EmotionHandler:
             is_flipped (bool): 画像を左右反転するかどうか。
         """
         self.root = root
+        self.toplevel_window = toplevel_window # ウィンドウ全体への参照を保持
         self.config = config
         self.character_controller = character_controller
         self.window_width = window_width
@@ -52,6 +53,7 @@ class EmotionHandler:
         self.press_pos = (0, 0)
         self.initial_window_pos = (0, 0)
         self.is_dragging = False
+        self.drag_start_side_is_left = None
         self.click_time_threshold = self.config.getint('UI', 'CLICK_TIME_THRESHOLD_MS', fallback=300) / 1000.0
         self.click_move_threshold = self.config.getint('UI', 'CLICK_MOVE_THRESHOLD_PIXELS', fallback=5)
         
@@ -62,9 +64,16 @@ class EmotionHandler:
         self.selected_index = 0
         self.active_cursor_name = None
 
+        # テーママネージャーを取得
+        theme = self.character_controller.mascot_app.theme_manager
+
+        # アクションラベルのフォントを基準単位で指定
         self.action_label = tk.Label(
-            self.root, text="", bg="#FFFFE0", fg="black", 
-            relief="solid", borderwidth=1, font=("Yu Gothic UI", 9)
+            self.root, text="", 
+            bg=theme.get('tooltip_bg'),      # 修正: ハードコードからテーマ参照へ
+            fg=theme.get('tooltip_text'),      # 修正: ハードコードからテーマ参照へ
+            relief="solid", borderwidth=self.character_controller.mascot_app.border_width_normal, 
+            font=self.character_controller.mascot_app.font_small
         )
         
         self.image_label.bind('<Button-1>', self.press_window)
@@ -75,18 +84,28 @@ class EmotionHandler:
         self.image_label.bind('<MouseWheel>', self.on_mouse_wheel)
 
     def _hex_to_rgb(self, hex_color):
-        """HEX形式のカラーコードをRGBのタプルに変換します。"""
+        if not hex_color or not hex_color.startswith('#'):
+            return (255, 0, 255) # デフォルトのピンクを返す
         hex_color = hex_color.lstrip("#")
         return tuple(int(hex_color[i*2:i*2+2], 16) for i in (0, 1, 2))
 
-    def _process_transparency(self, img_pil):
-        """指定された背景色を透明化し、境界線を描画します。"""
+    def _process_transparency(self, img_pil, transparent_color_rgb, edge_color_rgb):
+        """
+        指定された背景色を透明化し、境界線を描画します。
+
+        Args:
+            img_pil (Image): 処理対象のPIL Imageオブジェクト。
+            transparent_color_rgb (tuple): 透過させる色のRGBタプル。
+            edge_color_rgb (tuple): 境界線の色のRGBタプル。
+        """
         img_rgba = img_pil.convert("RGBA")
         img_np = np.array(img_rgba)
         
         rgb_pixels = img_np[:, :, :3].astype(np.int16)
-        target_rgb = np.array(self.transparent_color_rgb, dtype=np.int16)
+        target_rgb = np.array(transparent_color_rgb, dtype=np.int16)
         diff = np.abs(rgb_pixels - target_rgb)
+        
+        # 許容誤差はself.toleranceを使い続ける
         is_transparent_mask = (diff <= self.tolerance).all(axis=2)
         
         dilated_mask = is_transparent_mask.copy()
@@ -97,7 +116,7 @@ class EmotionHandler:
         
         edge_mask = dilated_mask & ~is_transparent_mask
         
-        img_np[edge_mask, :3] = self.edge_color_rgb
+        img_np[edge_mask, :3] = edge_color_rgb
         img_np[is_transparent_mask, 3] = 0
         
         return Image.fromarray(img_np)
@@ -110,7 +129,11 @@ class EmotionHandler:
                     img_pil = ImageOps.mirror(img_pil)
                 aspect_ratio = img_pil.height / img_pil.width
                 resized_img = img_pil.resize((self.window_width, int(self.window_width * aspect_ratio)), Image.Resampling.LANCZOS)
-                processed_img = self._process_transparency(resized_img)
+                processed_img = self._process_transparency(
+                    resized_img, 
+                    self.transparent_color_rgb, 
+                    self.edge_color_rgb
+                )
                 return ImageTk.PhotoImage(processed_img)
         except FileNotFoundError:
             return None
@@ -309,8 +332,12 @@ class EmotionHandler:
         """画像上でマウスボタンが押されたときの処理。"""
         self.press_time = time.time()
         self.press_pos = (event.x_root, event.y_root)
-        self.initial_window_pos = (self.root.winfo_x(), self.root.winfo_y())
+        self.initial_window_pos = (self.toplevel_window.winfo_x(), self.toplevel_window.winfo_y())
         self.is_dragging = False
+        # ドラッグ開始時のサイドを記録
+        screen_center_x = self.toplevel_window.winfo_screenwidth() / 2
+        window_center_x = self.toplevel_window.winfo_x() + (self.toplevel_window.winfo_width() / 2)
+        self.drag_start_side_is_left = window_center_x < screen_center_x
 
     def drag_window(self, event):
         """マウスドラッグ中の処理。"""
@@ -319,17 +346,36 @@ class EmotionHandler:
         dy = event.y_root - self.press_pos[1]
         new_x = self.initial_window_pos[0] + dx
         new_y = self.initial_window_pos[1] + dy
-        self.root.geometry(f"+{new_x}+{new_y}")
+        self.toplevel_window.move_with_heart(new_x, new_y) # 新しいメソッドを呼び出す
 
     def release_window(self, event):
         """マウスボタンが離されたときの処理。クリックかドラッグかを判定します。"""
         duration = time.time() - self.press_time
         distance = ((event.x_root - self.press_pos[0])**2 + (event.y_root - self.press_pos[1])**2)**0.5
         
-        if duration < self.click_time_threshold and distance < self.click_move_threshold:
-            if self.is_dragging:
-                self.root.geometry(f"+{self.initial_window_pos[0]}+{self.initial_window_pos[1]}")
+        is_click = duration < self.click_time_threshold and distance < self.click_move_threshold
+
+        if not is_click and self.is_dragging:
+            # --- ドラッグ操作が完了したと判断 ---
+            # 1. ドラッグ終了時のサイドを計算
+            screen_center_x = self.toplevel_window.winfo_screenwidth() / 2
+            window_center_x = self.toplevel_window.winfo_x() + (self.toplevel_window.winfo_width() / 2)
+            drag_end_side_is_left = window_center_x < screen_center_x
             
+            # 2. 開始時と終了時でサイドが変わったか（中央をまたいだか）を判定
+            if self.drag_start_side_is_left is not None and self.drag_start_side_is_left != drag_end_side_is_left:
+                # 3a. サイドをまたいでいたら、反転処理を呼び出す
+                self.character_controller.flip_character()
+            else:
+                # 3b. サイドをまたいでいなければ、レイアウト更新のみ行う
+                self.toplevel_window.check_and_update_layout()
+
+        if is_click:
+            # クリックだった場合は、ドラッグ前の位置に戻す
+            if self.is_dragging:
+                self.toplevel_window.move_with_heart(self.initial_window_pos[0], self.initial_window_pos[1])
+            
+            # タッチエリアの判定
             if self.active_areas:
                 selected_action = self.active_areas[self.selected_index]['action']
                 print(f"タッチエリア '{selected_action}' がクリックされました。")
@@ -346,7 +392,11 @@ class EmotionHandler:
             self.selected_index = 0
             self._update_action_display(event)
         elif self.active_areas:
-            self.action_label.place(x=event.x + 15, y=event.y + 10)
+            # アクションラベルの表示位置を基準単位でオフセット
+            app = self.character_controller.mascot_app
+            x_offset = app.padding_large
+            y_offset = app.padding_normal
+            self.action_label.place(x=event.x + x_offset, y=event.y + y_offset)
 
     def on_mouse_wheel(self, event):
         """マウスホイールが回転したときの処理。重なったタッチエリアの選択を切り替えます。"""
@@ -378,7 +428,12 @@ class EmotionHandler:
             display_text += f" ({self.selected_index + 1}/{len(self.active_areas)})"
         
         self.action_label.config(text=display_text)
-        self.action_label.place(x=event.x + 15, y=event.y + 10)
+        
+        # アクションラベルの表示位置を基準単位でオフセット
+        app = self.character_controller.mascot_app
+        x_offset = app.padding_large
+        y_offset = app.padding_normal
+        self.action_label.place(x=event.x + x_offset, y=event.y + y_offset)
 
         if cursor_name != self.active_cursor_name:
             cursor_file = os.path.join(self.cursor_path, f"{cursor_name}.cur")
@@ -404,3 +459,13 @@ class EmotionHandler:
                 if x1 <= x <= x2 and y1 <= y <= y2:
                     overlapping_areas.append(area)
         return overlapping_areas
+    
+    def reload_theme(self):
+        """
+        アクションラベルのテーマカラーを再適用します。
+        """
+        theme = self.character_controller.mascot_app.theme_manager
+        self.action_label.config(
+            bg=theme.get('tooltip_bg'),
+            fg=theme.get('tooltip_text')
+        )

@@ -138,6 +138,35 @@ class VoicevoxManager:
         """ミュート状態を設定します。"""
         self.is_muted = is_muted
 
+    def reload_settings(self, new_exe_path, new_api_url):
+        """
+        設定ファイルから読み込んだ新しいパスとURLでマネージャーを更新する。
+        ユーザーの要求に応じて、エンジンの状態をチェックし、必要であれば起動を試みる。
+        """
+        print("VOICEVOXの設定を更新します。")
+        
+        # 1. APIのURLは即座に更新する
+        if self.api_url != new_api_url:
+            print(f"VOICEVOX API URLが変更されました: {self.api_url} -> {new_api_url}")
+            self.api_url = new_api_url
+            # URLが変わった可能性があるので、エンジンの状態を再チェック
+            self.is_running = self._is_engine_running()
+
+        # 2. exe_pathの変更を処理する
+        exe_path_changed = self.exe_path != new_exe_path
+        # 次回起動時に備えて、新しいパスは常に記憶しておく
+        self.exe_path = new_exe_path 
+
+        if exe_path_changed:
+            print(f"VOICEVOXの実行パスが変更されました: {new_exe_path}")
+            # エンジンが現在起動していない場合のみ、新しいパスで起動を試みる
+            if not self.is_running:
+                print("VOICEVOXエンジンが起動していないため、新しいパスで起動を試みます。")
+                # UIを固まらせないよう、起動処理は別スレッドで行う
+                threading.Thread(target=self.ensure_engine_running, daemon=True).start()
+            else:
+                print("VOICEVOXエンジンは既に起動中のため、次回の起動時から新しいパスが使用されます。")
+
     def play_wav(self, wav_data, on_start=None, on_finish=None):
         """受け取ったWAVデータを別スレッドで再生します。"""
         if self.is_muted or not wav_data or platform.system() != "Windows":

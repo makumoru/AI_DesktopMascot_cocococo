@@ -1,26 +1,30 @@
-# output_box.py
+# src/output_box.py
 
 import tkinter as tk
 from tkinter import ttk
+from typing import TYPE_CHECKING
+
+# 循環参照を避けるための型チェック用インポート
+if TYPE_CHECKING:
+    from src.character_controller import CharacterController
 
 class OutputBox:
     """
     AIからの応答テキストを表示するためのUIコンポーネント。
     TkinterのTextウィジェットとScrollbarウィジェットを使い、スクロール可能な表示領域を提供します。
     """
-    def __init__(self, root, window_width):
+    def __init__(self, root, app, character_controller: 'CharacterController'):
         """
         OutputBoxのインスタンスを初期化し、テキスト表示用のウィジェットを生成します。
 
         Args:
             root (tk.Tk or tk.Frame): このウィジェットを配置する親ウィジェット。
-            window_width (int): 親ウィンドウの幅。テキストの折り返し幅の計算に使用します。
+            app (DesktopMascot): アプリケーションのメインインスタンス。基準単位の取得に使用。
         """
-        font_size = 12
-
-        # スクロールバーとテキストウィジェットを配置するためのフレーム
-        self.frame = tk.Frame(root, bg="#e0e0e0")
-        self.frame.pack(side="bottom", fill="x", pady=0, padx=0)
+        # 
+        theme = character_controller.mascot_app.theme_manager
+        self.frame = tk.Frame(root, bg=theme.get('bg_main'))
+        self.frame.pack(side="top", fill="both", expand=True, pady=0, padx=0)
 
         # スクロールバーの作成
         self.scrollbar = ttk.Scrollbar(self.frame, orient="vertical")
@@ -28,16 +32,15 @@ class OutputBox:
         # Textウィジェットの作成
         self.text_widget = tk.Text(
             self.frame,
-            font=("Arial", font_size),
-            height=5,  # 複数行のテキストに対応できるよう、高さを5行分に固定
-            bg="#e0e0e0",
-            fg="black",
-            padx=10,
-            pady=10,
-            wrap="word", # 単語単位で自動的に折り返す
-            relief="solid",
-            bd=1,
-            # Textウィジェットの垂直スクロールコマンドをスクロールバーに接続
+            font=app.font_normal,
+            height=5,
+            bg=theme.get('output_bg'),
+            fg=theme.get('output_text'),
+            padx=app.padding_normal,
+            pady=app.padding_normal,
+            wrap="word",
+            relief="flat",
+            bd=0,
             yscrollcommand=self.scrollbar.set 
         )
 
@@ -76,3 +79,16 @@ class OutputBox:
         # packされたウィジェットの要求サイズを更新
         self.frame.update_idletasks()
         return self.frame.winfo_reqheight()
+    
+    def reload_theme(self, theme):
+        """
+        新しいテーマ設定でウィジェットの色を更新します。
+        
+        Args:
+            theme (ColorThemeManager): 新しいテーマを提供するマネージャーインスタンス。
+        """
+        self.frame.config(bg=theme.get('bg_main'))
+        self.text_widget.config(
+            bg=theme.get('output_bg'),
+            fg=theme.get('output_text')
+        )
