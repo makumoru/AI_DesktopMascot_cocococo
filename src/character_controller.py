@@ -11,6 +11,7 @@ from src.character_ui import CharacterUIGroup
 from src.gemma_api import GemmaAPI
 from src.log_manager import ConversationLogManager
 from src.input_history_manager import InputHistoryManager
+from src.voice_manager import VoiceManager
 
 # 循環参照を避けるための型チェック用インポート
 if TYPE_CHECKING:
@@ -59,23 +60,29 @@ class CharacterController:
             info_section = 'INFO'
             self.name = self.char_config.get(info_section, 'CHARACTER_NAME')
             self.personality = self.char_config.get(info_section, 'CHARACTER_PERSONALITY')
-            self.speaker_id = self.char_config.getint(info_section, 'DEFAULT_SPEAKER_ID')
+            
+            # 発話頻度を読み込み、0-100の範囲に収める
+            raw_freq = self.char_config.getint(info_section, 'SPEECH_FREQUENCY', fallback=50) # ADDED
+            self.speech_frequency = max(0, min(100, raw_freq)) # ADDED
+            
             # キャラクター個別のウィンドウ透過色・縁色を読み込む
             self.transparent_color = self.char_config.get(info_section, 'TRANSPARENT_COLOR', fallback=mascot_app.default_transparent_color)
             self.edge_color = self.char_config.get(info_section, 'EDGE_COLOR', fallback=mascot_app.default_edge_color)
-        except (NoSectionError, NoOptionError) as e:
+        except (NoSectionError, NoOptionError, ValueError) as e:
             # character.iniに問題があっても停止しないように、デフォルト値を設定
-            print(f"エラー: {char_config_path}に[INFO]セクションまたは必須項目がありません: {e}")
+            print(f"エラー: {char_config_path}の[INFO]セクションまたは必須項目がありません/不正な値です: {e}")
             self.name = f"キャラ{character_id}"
             self.personality = "親しみやすい"
-            self.speaker_id = 1
+            self.speech_frequency = 50 # ADDED: エラー時のフォールバック
             self.transparent_color = mascot_app.default_transparent_color
             self.edge_color = mascot_app.default_edge_color
         
-        # --- 好感度システムの初期化 ---
-        self.savedata_path = os.path.join(self.character_dir, 'favorability.ini')
+        # --- 好感度・音量システムの初期化 ---
+        self.savedata_path = os.path.join(self.character_dir, 'savedata.ini')
         self.savedata = ConfigParser()
-        self.favorability = 0 # 初期値
+        self.favorability = 0
+        self.volume = 50
+        self.volume_var = tk.IntVar(value=self.volume)
         self._load_or_create_savedata()
         self._load_favorability_stages()
         self.favorability_hearts = []
@@ -124,6 +131,9 @@ class CharacterController:
 
         self._load_costume_config()
         self._load_voice_params()
+
+        # 各キャラクターが自身のVoiceManagerを持つ
+        self.voice_manager = VoiceManager(mascot_app.global_voice_engine_manager, self.char_config, self)
 
         # --- UIとAPIハンドラの生成 ---
         self.ui = CharacterUIGroup(self, self.config, self.char_config, self.input_history_manager)
@@ -433,35 +443,58 @@ class CharacterController:
 
     def _load_or_create_savedata(self):
         """
-        キャラクターごとのセーブデータ(favorability.ini)を読み込む。
+        キャラクターごとのセーブデータ(savedata.ini)を読み込む。
         ファイルが存在しない場合は、初期値で新規作成する。
         """
         if not os.path.exists(self.savedata_path):
-            self.savedata['STATUS'] = {'FAVORABILITY': '0'}
+            self.savedata['STATUS'] = {'FAVORABILITY': '0', 'VOLUME': '50'} # MODIFIED: 新規作成時にvolumeも追加
             try:
                 with open(self.savedata_path, 'w', encoding='utf-8') as f:
                     self.savedata.write(f)
-                print(f"[{self.name}] favorability.ini を新規作成しました。")
+                print(f"[{self.name}] savedata.ini を新規作成しました。")
             except Exception as e:
-                print(f"[{self.name}] favorability.ini の新規作成に失敗: {e}")
+                print(f"[{self.name}] savedata.ini の新規作成に失敗: {e}")
         
         try:
             self.savedata.read(self.savedata_path, encoding='utf-8')
-            self.favorability = self.savedata.getint('STATUS', 'FAVORABILITY')
-        except (NoSectionError, NoOptionError, ValueError) as e:
-            print(f"[{self.name}] favorability.ini の読み込みエラー、または不正な値です。好感度を0に初期化します。エラー: {e}")
+            # [STATUS]セクションが存在しない場合を作成
+            if not self.savedata.has_section('STATUS'):
+                self.savedata.add_section('STATUS')
+                
+            self.favorability = self.savedata.getint('STATUS', 'FAVORABILITY', fallback=0)
+            self.volume = self.savedata.getint('STATUS', 'VOLUME', fallback=50) # MODIFIED: volumeも読み込み
+            self.volume_var.set(self.volume) # MODIFIED: UI連携用変数も更新
+        except (ValueError) as e:
+            print(f"[{self.name}] savedata.ini の読み込みエラー、または不正な値です。値を初期化します。エラー: {e}")
             self.favorability = 0
+            self.volume = 50
             # 不正なファイルを修正するために上書き保存
-            self.savedata['STATUS'] = {'FAVORABILITY': '0'}
+            self.savedata.set('STATUS', 'FAVORABILITY', '0')
+            self.savedata.set('STATUS', 'VOLUME', '50')
             with open(self.savedata_path, 'w', encoding='utf-8') as f:
                 self.savedata.write(f)
+
+    def update_volume(self, new_volume: int): # ADDED: 新設
+        """
+        音量を更新し、ファイルに保存する。
+        """
+        new_volume = max(0, min(100, new_volume)) # 0-100の範囲に丸める
+        if self.volume != new_volume:
+            self.volume = new_volume
+            self.volume_var.set(new_volume) # UI変数を更新
+            self.savedata.set('STATUS', 'VOLUME', str(new_volume))
+            try:
+                with open(self.savedata_path, 'w', encoding='utf-8') as f:
+                    self.savedata.write(f)
+                print(f"[{self.name}] 音量が {new_volume}% に変更されました。")
+            except Exception as e:
+                print(f"[{self.name}] savedata.iniの保存に失敗しました: {e}")
 
     def update_favorability(self, change_value: int):
         """
         好感度を更新し、ファイルに保存する。
         変化量と合計値には上限/下限が設定される。
         """
-        print("update_favorability_1")
         # AIが指定した変化量を-25から25の範囲に丸める
         change_value = max(-25, min(25, change_value))
         
@@ -470,20 +503,17 @@ class CharacterController:
         
         # 好感度の総量を-500から500の範囲に丸める
         new_favorability = max(-500, min(500, new_favorability))
-        print(f"if([{self.favorability}] != [{new_favorability}])")
         if self.favorability != new_favorability:
-            print("update_favorability_2")
             actual_change = new_favorability - self.favorability
             self.favorability = new_favorability
             self.savedata.set('STATUS', 'FAVORABILITY', str(new_favorability))
-            print("update_favorability_3")
             try:
                 with open(self.savedata_path, 'w', encoding='utf-8') as f:
                     self.savedata.write(f)
                 print(f"[{self.name}] 好感度が {actual_change} 変化し、{new_favorability} になりました。")
                 self.ui.update_info_display()
             except Exception as e:
-                print(f"[{self.name}] favorability.iniの保存に失敗しました: {e}")
+                print(f"[{self.name}] savedata.iniの保存に失敗しました: {e}")
 
     def _load_heart_ui_config(self):
         """character.iniからハート専用のUI設定 ([HEART_UI]) を読み込む。"""
@@ -694,3 +724,21 @@ class CharacterController:
         """
         if self.ui and self.ui.winfo_exists():
             self.ui.reload_theme()
+
+    def reload_config_and_services(self):
+        """
+        DesktopMascotからの指示で、関連サービスの設定を再読み込みする。
+        """
+        print(f"[{self.name}] の関連サービス設定を更新します。")
+        # VoiceManagerに設定の再読み込みを指示
+        self.voice_manager.reload_settings()
+
+        # GemmaAPIの再読み込み
+        mascot_app = self.mascot_app
+        self.gemma_api = GemmaAPI(
+            self.config,
+            gemma_api_key=mascot_app.gemma_api_key,
+            gemma_model_name=mascot_app.gemma_model_name,
+            gemma_test_mode=mascot_app.gemma_test_mode,
+            mascot=self
+        )

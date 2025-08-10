@@ -47,6 +47,8 @@ class UIManager:
         self.context_menu.add_checkbutton(label="スケジュール通知を有効にする", variable=self.app.is_schedule_enabled)
         self.context_menu.add_command(label="スケジュール管理...", command=self.app.open_schedule_editor)
         self.context_menu.add_checkbutton(label="音声再生", variable=self.app.is_sound_enabled)
+        self.volume_menu = tk.Menu(self.context_menu, tearoff=0) # ADDED
+        self.context_menu.add_cascade(label="音量調整", menu=self.volume_menu) # ADDED
         self.context_menu.add_separator()
         
         self.api_status_menu = tk.Menu(self.context_menu, tearoff=0)
@@ -86,6 +88,7 @@ class UIManager:
         self.context_menu.add_cascade(label="キャラクター追加", menu=self.character_add_menu)
         
         self.context_menu.add_separator()
+        self.context_menu.add_command(label="会話ログを見る", command=lambda: self.app.open_conversation_log_viewer(self.context_menu_target_char))
         self.context_menu.add_command(label="会話ログをクリア", command=lambda: self.app.clear_log_for_character(self.context_menu_target_char))
         self.context_menu.add_separator()
         # ここここの構造とpyinstallerとの相性が悪すぎるのか何やっても安全な再起動ができなかった。一時封印処置。
@@ -199,6 +202,7 @@ class UIManager:
         self.update_capture_target_menu()
         self.update_costume_menu()
         self.update_cool_time_menu()
+        self.update_volume_menu() # ADDED
         self.update_character_change_menu() 
         self.update_character_add_menu()
         
@@ -392,4 +396,26 @@ class UIManager:
                 variable=self.app.theme_setting_var,
                 value=theme_name,
                 command=lambda t=theme_name: self.app.set_theme(t)
+            )
+
+    def update_volume_menu(self): # ADDED: 新設
+        """キャラクターごとの音量調整メニューを動的に生成・更新します。"""
+        char = self.context_menu_target_char
+        if not char: return
+        
+        self.volume_menu.delete(0, "end")
+        
+        # 10%刻みで100%から0%までラジオボタンを追加
+        for volume_level in range(100, -1, -10):
+            label = f"{volume_level}%"
+            if volume_level == 50:
+                label += " (デフォルト)"
+            if volume_level == 0:
+                label += " (ミュート)"
+
+            self.volume_menu.add_radiobutton(
+                label=label,
+                variable=char.volume_var, # character_controllerが持つIntVarを使用
+                value=volume_level,
+                command=lambda level=volume_level, c=char: c.update_volume(level)
             )

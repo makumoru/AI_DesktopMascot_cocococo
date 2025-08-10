@@ -17,7 +17,6 @@ from datetime import datetime, timedelta
 from src.log_manager import ConversationLogManager
 from src.input_history_manager import InputHistoryManager
 from src.character_controller import CharacterController
-from src.voicevox_player import VoicevoxManager
 from src.gemini_api_handler import GeminiAPIHandler
 from src.screenshot_handler import ScreenshotHandler
 from src.ui_manager import UIManager
@@ -26,6 +25,8 @@ from src.schedule_manager import ScheduleManager
 from src.schedule_editor import ScheduleEditorWindow
 from src.api_settings_editor import ApiSettingsEditorWindow
 from src.color_theme_manager import ColorThemeManager
+from src.log_viewer import ConversationLogViewer
+from src.global_voice_engine_manager import GlobalVoiceEngineManager
 
 class DesktopMascot:
     """
@@ -46,7 +47,10 @@ class DesktopMascot:
         
         self.config = ConfigParser()
         self.config.read('config.ini', encoding='utf-8')
-        
+
+        # GlobalVoiceEngineManagerのインスタンス化
+        self.global_voice_engine_manager = GlobalVoiceEngineManager(self.config)
+
         # ColorThemeManagerをインスタンス化
         self.theme_manager = ColorThemeManager(self.config)
         self.theme_setting_var = tk.StringVar(value=self.config.get('UI', 'theme', fallback=''))
@@ -101,8 +105,10 @@ class DesktopMascot:
         self.current_app_date = datetime.now().date()
         self.schedule_editor_window = None # スケジュール管理ウィンドウの参照を保持する変数
         self.api_settings_window = None # API設定ウィンドウの参照を保持する変数
+        self.log_viewer_windows = {} # キー: character_id, 値: windowインスタンス
         self.executed_schedules_this_minute = []
         self.last_checked_minute = -1
+        self._post_speech_callback = None
 
         self.last_api_request_time = None
         self.current_speaker_on_request = None
@@ -113,6 +119,33 @@ class DesktopMascot:
         self.ui_manager = UIManager(self)
         self.behavior_manager = BehaviorManager(self)
     
+    def _select_speaker_by_frequency(self): # ADDED: 新設
+        """
+        キャラクターの発話頻度を重みとして、確率的に話し手を一人選びます。
+        """
+        if not self.characters:
+            return None
+
+        # 画面に表示されているキャラクターのみを対象にする
+        visible_characters = [c for c in self.characters if c and c.ui.winfo_exists()]
+        if not visible_characters:
+            return None
+        
+        if len(visible_characters) == 1:
+            return visible_characters[0]
+            
+        # 各キャラクターの発話頻度を取得
+        weights = [char.speech_frequency for char in visible_characters]
+        
+        # 全員の頻度が0の場合、ランダムに一人選ぶ (完全な沈黙を避ける)
+        if all(w == 0 for w in weights):
+            return random.choice(visible_characters)
+
+        # 重み付きランダム選択
+        # random.choices はリストを返すので、最初の要素を取得する
+        selected_char = random.choices(visible_characters, weights=weights, k=1)[0]
+        return selected_char
+
     def _load_config_values(self):
         """config.iniから各種設定値を読み込み、インスタンス変数に格納します。"""
         self.gemini_test_mode = self.config.getboolean('GEMINI', 'GEMINI_TEST_MODE')
@@ -169,81 +202,147 @@ class DesktopMascot:
         ]
         return available_dirs
 
+    def get_character_name_from_dir(self, char_dir_name):
+        """
+        キャラクターのディレクトリ名から、iniファイルに設定された名前を取得するヘルパーメソッド。
+        """
+        char_ini_path = os.path.join('characters', char_dir_name, 'character.ini')
+        try:
+            if os.path.exists(char_ini_path):
+                config = ConfigParser()
+                config.read(char_ini_path, encoding='utf-8')
+                if config.has_section('INFO') and config.has_option('INFO', 'CHARACTER_NAME'):
+                    return config.get('INFO', 'CHARACTER_NAME')
+        except Exception:
+            pass # エラー時はフォールバック
+        return char_dir_name # 取得失敗時はディレクトリ名を返す
+
     def change_character(self, target_char_id, new_char_dir_name):
         """
-        指定されたキャラクターを新しいキャラクターと入れ替えます。
-
-        Args:
-            target_char_id (str): 入れ替え対象のキャラクターID ('1' または '2')。
-            new_char_dir_name (str): 新しいキャラクターのディレクトリ名。
+        キャラクターを交代させる一連のシーケンスを開始します。
+        退去挨拶 -> 交代処理 -> 登場挨拶 -> (50%)相方の反応 の順で実行されます。
         """
-        if not self.is_ready or self.is_processing_lock.locked():
-            # アプリ準備中か、他の処理が実行中の場合は中断
+        if self.is_processing_lock.acquire(blocking=False):
+            print(f"キャラクター交代シーケンスを開始します: {target_char_id} -> {new_char_dir_name}")
+            
+            old_char = self.char1 if target_char_id == '1' else self.char2
+            if not old_char:
+                print("エラー: 交代対象のキャラクターが見つかりません。")
+                if self.is_processing_lock.locked(): self.is_processing_lock.release()
+                return
+
+            # --- コールバックチェーンの定義 ---
+
+            # Step 3: (最終処理) ロックを解放してシーケンス完了
+            def final_step():
+                print("キャラクター交代シーケンス完了。")
+                self.reset_cool_time()
+                if self.is_processing_lock.locked():
+                    self.is_processing_lock.release()
+
+            # Step 2: 相方の反応
+            def react_to_change(new_char, partner_char):
+                # 交代後の相方がいて、50%の確率に当選した場合
+                if partner_char and random.random() < 0.5:
+                    self._post_speech_callback = final_step
+                    prompt = f"隣にいた「{old_char.name}」が帰り、代わりに「{new_char.name}」が新しく来ました。この状況について、何か短いコメントをしてください。"
+                    self.request_speech(partner_char, prompt, "交代への反応")
+                else:
+                    final_step() # 反応しない場合は即終了
+
+            # Step 1: 新キャラクターの登場挨拶
+            def greet_new_character(new_char, partner_char):
+                self._post_speech_callback = lambda: react_to_change(new_char, partner_char)
+                prompt = "ユーザーの操作で、交代して新しく登場しました。自己紹介を兼ねた短い挨拶をしてください。"
+                self.request_speech(new_char, prompt, "交代挨拶")
+
+            # Step 0: 実際の交代処理と、その後の挨拶トリガー
+            def swap_and_greet():
+                is_char1 = target_char_id == '1'
+                
+                # destroy() の前に必要な情報をすべて取得する
+                old_char_geometry = old_char.ui.geometry()
+                old_char_is_flipped = old_char.is_left_side
+                
+                # 古いキャラクターを破棄
+                self.characters.remove(old_char)
+                old_char.destroy()
+                if is_char1: self.char1 = None
+                else: self.char2 = None
+
+
+                # 新しいキャラクターを生成
+                try:
+                    # is_flippedの引数を修正
+                    # old_char_is_flipped は True/False なので、そのまま渡す
+                    new_char = CharacterController(
+                        self.root, self, target_char_id, new_char_dir_name, 
+                        old_char_is_flipped, self.config, 'right', # position_sideは一旦仮でOK
+                        self.input_history_manager
+                    )
+                except Exception as e:
+                    messagebox.showerror("キャラクター変更エラー", f"'{new_char_dir_name}'の読み込みに失敗しました。\nアプリケーションを終了します。お手数ですが手動で再起動してください。")
+                    self.exit_app()
+                    return
+                
+                # UIの位置と状態を確定させる処理を追加
+                # 1. まずジオメトリ（位置とサイズ）を設定
+                new_char.ui.geometry(old_char_geometry)
+                new_char.ui.update_idletasks() # UIの更新を即座に反映させる
+
+                # 2. 最終的な表示を確定させ、その後で挨拶シーケンスを開始する
+                def finalize_and_greet():
+                    # 2a. 表示を確定（ハートの位置などもここで決まる）
+                    new_char.ui.update_info_display()
+
+                    # 2b. アプリケーション内のリストと参照を更新
+                    if is_char1:
+                        self.char1 = new_char
+                        self.characters.insert(0, new_char)
+                    else:
+                        self.char2 = new_char
+                        # 2人目が存在しない場合も考慮してappend
+                        if len(self.characters) < 2:
+                            self.characters.append(new_char)
+                        else:
+                            self.characters[1] = new_char # 既存の2人目と入れ替え
+
+                    # 2c. パートナー情報などを再設定
+                    if self.is_char2_enabled:
+                        if self.char1 and self.char2:
+                            self.char1.set_partner(self.char2)
+                            self.char2.set_partner(self.char1)
+                    else:
+                        if self.char1:
+                            self.char1.set_partner(None)
+                    
+                    self._update_app_title()
+                    self.screenshot_handler.app_titles = [char.ui.title() for char in self.characters if char]
+                    self._update_all_character_maps()
+
+                    # 新しいキャラクターの話者IDを解決する
+                    print(f"[{new_char.name}] の話者IDを解決します...")
+                    new_char.voice_manager.resolve_speaker_id()
+
+                    # 2d. 挨拶シーケンスの次のステップへ
+                    greet_new_character(new_char, new_char.partner)
+                
+                # after(10)のように少しだけ遅延させることで、UIの描画を確実にする
+                self.root.after(10, finalize_and_greet)
+
+
+            # --- シーケンス開始点 ---
+            self._post_speech_callback = swap_and_greet
+            new_char_name = self.get_character_name_from_dir(new_char_dir_name)
+            farewell_prompt = f"これから「{new_char_name}」さんと交代します。ユーザーに短いお別れの挨拶をしてください。"
+            self.request_speech(old_char, farewell_prompt, "退去挨拶")
+            
+        else:
+            # ロック取得失敗時の処理
             print("他の処理が実行中か、アプリが準備中のため、キャラクター変更を中断しました。")
-            # ユーザーにフィードバックを返す
             char_to_notify = self.char1 if self.char1 and self.char1.ui.winfo_exists() else None
             if char_to_notify:
                 char_to_notify.ui.output_box.set_text("今は他のことを考えているみたい...")
-            return
-
-        with self.is_processing_lock:
-            print(f"キャラクター {target_char_id} を '{new_char_dir_name}' に変更します。")
-
-            # 1. 古いキャラクターを特定して破棄
-            is_char1 = target_char_id == '1'
-            old_char = self.char1 if is_char1 else self.char2
-            
-            if old_char is None:
-                print("エラー: 入れ替え対象のキャラクターが見つかりません。")
-                return
-
-            old_char_x = old_char.ui.winfo_x()
-            old_char_is_flipped = old_char.is_left_side
-            old_char_pos_side = 'left' if old_char_x < (self.root.winfo_screenwidth() / 2) else 'right'
-
-            # リストから削除し、UIを破棄
-            self.characters.remove(old_char)
-            old_char.destroy()
-
-            # 2. 新しいキャラクターを生成
-            try:
-                new_char = CharacterController(
-                    self.root, self, target_char_id, new_char_dir_name, old_char_is_flipped, self.config, old_char_pos_side,
-                    self.input_history_manager
-                )
-            except Exception as e:
-                messagebox.showerror("キャラクター変更エラー", f"'{new_char_dir_name}'の読み込みに失敗しました。\nアプリケーションを終了します。お手数ですが手動で再起動してください。")
-                # self.restart_app() #封印処置
-                self.exit_app() # 安全に終了させる
-                return
-
-            # 3. リストと参照を更新
-            if is_char1:
-                self.char1 = new_char
-                self.characters.insert(0, new_char) # 元の位置に挿入
-            else:
-                self.char2 = new_char
-                self.characters.append(new_char)
-
-            # 4. パートナー情報を再設定
-            if self.is_char2_enabled:
-                self.char1.set_partner(self.char2)
-                self.char2.set_partner(self.char1)
-            else:
-                self.char1.set_partner(None)
-
-            # 5. アプリケーションタイトルとサービスを更新
-            self._update_app_title()
-            self.screenshot_handler.app_titles = [char.ui.title() for char in self.characters]
-
-            # 交代後の表示を確定させる（名前とハートの位置を含む）
-            self.root.after(0, new_char.ui.update_info_display)
-
-            # 6. 交代後の挨拶をリクエスト
-            self.prevent_cool_down_reset = True
-            prompt = "ユーザーの操作で、新しく登場しました。自己紹介を兼ねた短い挨拶をしてください。"
-            self.request_speech(new_char, prompt, "起動挨拶")
-            self._update_all_character_maps()
 
     def _update_app_title(self):
         """キャラクター情報に基づいてウィンドウタイトルを更新するヘルパーメソッド"""
@@ -324,7 +423,6 @@ class DesktopMascot:
 
     def _setup_services(self):
         """共有サービス（音声、API、ログ等）を初期化します。"""
-        self.voicevox_manager = VoicevoxManager(self.config)
         self.gemini_handler = GeminiAPIHandler(self.config)
 
         app_titles = [char.ui.title() for char in self.characters]
@@ -334,10 +432,20 @@ class DesktopMascot:
         character_map.update({'USER': 'ユーザー', 'SYSTEM': 'システム'})
 
     def _log_event_for_all_characters(self, actor_id, target_id, action_type, content):
-        """【新設】現在画面にいる全キャラクターのログファイルにイベントを記録します。"""
+        """
+        現在画面にいる全キャラクターのログファイルにイベントを記録し、
+        開いているログビューアーに更新を通知します。
+        """
+        # 1. 全キャラクターのログファイルに書き込む
         for char in self.characters:
             if char:
                 char.log_manager.add_entry(actor_id, target_id, action_type, content)
+
+        # 2. 開かれている全てのログビューアーに更新を通知
+        for viewer in self.log_viewer_windows.values():
+            if viewer and viewer.winfo_exists():
+                # UIの更新はメインスレッドで行う
+                self.root.after(0, viewer.update_log_display)
 
     def _create_tools_config_for_character(self, character):
         """指定されたキャラクターの現在の状態に基づいて、AIのツール設定を動的に生成します。"""
@@ -413,6 +521,9 @@ class DesktopMascot:
             # 5. タイトルやハンドラを更新
             self._update_app_title()
             self.screenshot_handler.app_titles = [char.ui.title() for char in self.characters]
+
+            print(f"[{self.char2.name}] の話者IDを解決します...")
+            self.char2.voice_manager.resolve_speaker_id()
 
             # 追加したキャラクターの表示を確定させる（名前とハートの位置を含む）
             self.root.after(0, self.char2.ui.update_info_display)
@@ -518,10 +629,6 @@ class DesktopMascot:
         except Exception as e:
             print(f"run.exeの終了中にエラーが発生しました: {e}")
 
-    def _shutdown_services(self):
-        """アプリケーション終了時に外部プロセスをクリーンアップします。"""
-        self._shutdown_voicevox_engine()
-
     def _save_position_config(self):
         """現在のキャラクターの状態を position.ini に保存します。"""
         print("現在のキャラクター配置を position.ini に保存します...")
@@ -572,13 +679,38 @@ class DesktopMascot:
     #    self.root.after(100, lambda: os.execl(sys.executable, sys.executable, *sys.argv))
 
     def exit_app(self):
-        """アプリケーションを安全に終了します。"""
-        if self.is_shutting_down: return
+        """
+        アプリケーションを安全に終了します。
+        終了挨拶の完了を待ってから、後片付け処理を実行します。
+        """
+        if self.is_shutting_down or self.is_processing_lock.locked():
+            return
         self.is_shutting_down = True
-        self._save_position_config()
-        if self.tray_icon: self.tray_icon.stop()
-        self._shutdown_services()
-        self.root.after(100, self.root.destroy)
+        print("アプリケーションの終了処理を開始します...")
+
+        def final_shutdown():
+            """実際の後片付けとウィンドウ破棄を行う関数。"""
+            self._save_position_config()
+            if self.tray_icon:
+                self.tray_icon.stop()
+            if self.global_voice_engine_manager:
+                self.global_voice_engine_manager.shutdown_all()
+            # 少し待機してからウィンドウを閉じる
+            self.root.after(200, self.root.destroy)
+
+        # 表示されているキャラクターがいる場合のみ挨拶を試みる
+        visible_characters = [c for c in self.characters if c and c.ui.winfo_exists()]
+        if visible_characters:
+            # 挨拶の完了後に final_shutdown を呼び出すように設定
+            self._post_speech_callback = final_shutdown
+            
+            # ランダムに選ばれた一人が挨拶する
+            speaker = random.choice(visible_characters)
+            prompt = "アプリケーションを終了します。ユーザーに短いお別れの挨拶をしてください。"
+            self.request_speech(speaker, prompt, "終了挨拶")
+        else:
+            # キャラクターがいない、または非表示の場合は即座に終了処理
+            final_shutdown()
     
     def toggle_visibility(self):
         """キャラクターウィンドウの表示/非表示を切り替えます。"""
@@ -624,26 +756,39 @@ class DesktopMascot:
         """右クリックイベントをUIManagerに中継します。"""
         self.ui_manager.show_context_menu(event)
 
+    def _on_voice_engines_ready(self):
+        """
+        全音声エンジンの準備完了通知を受け取り、各キャラクターの話者ID解決を指示する。
+        """
+        print("音声エンジンの準備完了通知を受け取りました。キャラクターの話者IDを解決します。")
+        for char in self.characters:
+            if char and char.voice_manager:
+                # UIスレッドから安全に呼び出すために after を使用
+                self.root.after(0, char.voice_manager.resolve_speaker_id)
+        
+        # 準備がすべて整ったので、起動挨拶を実行
+        # afterで少し遅延させることで、ID解決処理が先に行われることを期待する
+        self.root.after(100, self.greet_on_startup)
+
     def startup_sequence(self):
         """
         起動時に実行される一連の初期化処理。
         UIの初期配置を最優先で行い、時間のかかる処理はバックグラウンドで続行します。
         """
-        # 1. UIの初期配置を最優先でスケジュールする
-        #    これにより、VOICEVOXの起動を待たずにキャラクターとハートが正しい位置に表示される
+        # 1. UIの初期配置（即時実行）
         self.root.after(0, self._apply_initial_settings)
 
-        # 2. 時間のかかるVOICEVOXの起動処理をバックグラウンドで実行する
-        if not self.voicevox_manager.ensure_engine_running():
-            print("VOICEVOXの起動に失敗。音声なしで続行します。")
+        # 2. 音声エンジンの初期化をバックグラウンドで開始
+        #    完了したら _on_voice_engines_ready メソッドが呼ばれる
+        self.global_voice_engine_manager.initialize_engines_and_cache_speakers(
+            on_complete_callback=self._on_voice_engines_ready
+        )
         
-        # 3. 全てのバックグラウンド準備が整ってから、アプリケーションを「準備完了」状態にする
-        #    UIの描画が安定するまで少し待つ
+        # 3. UIの描画が安定するまで少し待つ
         time.sleep(1) 
         self.is_ready = True
         
-        # 4. 準備完了後、起動挨拶と自律行動監視を開始する
-        self.greet_on_startup()
+        # 4. 自律行動監視を開始（起動挨拶はコールバック後に移動）
         self.behavior_manager.start()
         
     def _apply_initial_settings(self):
@@ -662,7 +807,12 @@ class DesktopMascot:
             char.ui.wm_attributes("-topmost", new_state)
 
     def _toggle_mute(self, *args):
-        self.voicevox_manager.set_mute_state(not self.is_sound_enabled.get())
+        """ミュート状態が変更された際に、全キャラクターに伝達する"""
+        is_muted = not self.is_sound_enabled.get()
+        print(f"グローバルミュート設定が変更されました。Muted: {is_muted}")
+        for char in self.characters:
+            if char and hasattr(char, 'voice_manager'): # voice_managerの存在を確認
+                char.voice_manager.set_mute_state(is_muted)
         
     def _find_current_cool_time_preset(self):
         """現在のクールタイム設定に一致するプリセットのラベルを返します。"""
@@ -747,9 +897,12 @@ class DesktopMascot:
                  # その感情が現在の衣装で利用可能かチェック
                  jp_to_en_map = {v: k for k, v in speaker.available_emotions.items()}
                  if gemma_result_jp in jp_to_en_map:
-                     target_emotion_jp = gemma_result_jp
-        
-        wav_data = self.voicevox_manager.generate_wav(filtered_text, speaker.speaker_id, target_emotion_jp, speaker.voice_params)
+                     target_emotion_jp = gemma_result_jp        
+        wav_data = speaker.voice_manager.generate_wav(
+            filtered_text,
+            target_emotion_jp,
+            character_volume_percent=speaker.volume
+        )
         self.root.after(0, self.perform_synchronized_update, speaker, filtered_text, wav_data, target_emotion_jp, pass_turn)
 
     def perform_synchronized_update(self, speaker, text, wav_data, emotion_jp, pass_turn):
@@ -763,10 +916,10 @@ class DesktopMascot:
             if self.is_processing_lock.locked():
                 self.is_processing_lock.release()
             return
-        if self.is_shutting_down: return
+        if self.is_shutting_down and self._post_speech_callback is None: return
         
         if not self.is_always_on_top.get():
-             speaker.ui.lift_with_heart() # これにより、下の<FocusIn>イベントがトリガーされる
+             speaker.ui.lift_with_heart()
 
         speaker.ui.output_box.set_text(text or "...")
         speaker.ui.emotion_handler.update_image(emotion_jp)
@@ -774,24 +927,38 @@ class DesktopMascot:
             if char is not speaker: char.ui.emotion_handler.stop_lip_sync()
 
         def on_finish_callback():
+            # 1. 特別なコールバックが設定されていれば、それを最優先で実行
+            if callback := self._post_speech_callback:
+                self._post_speech_callback = None  # 一度実行したらクリア
+                callback()
+                return # 特別なコールバック実行後は、以降の通常処理は行わない
+
+            # 2. 通常のラリー処理
             if self.is_char2_enabled and pass_turn:
                 self.is_in_rally, self.current_rally_count = True, self.current_rally_count + 1
                 prompt_for_partner = f"「{text}」"
                 self.request_speech(speaker.partner, prompt_for_partner, "ラリー", situation="相方からの返答要求")
             else:
+                # 3. 通常の終了処理 (ラリーでも特別なコールバックでもない場合)
                 self.is_in_rally = False
                 speaker.ui.emotion_handler.stop_lip_sync()
                 for char in self.characters:
                     if char is not speaker: char.ui.output_box.set_text("...")
-                if self.prevent_cool_down_reset: self.prevent_cool_down_reset = False
-                elif self.current_rally_count > 0: self.set_extended_cool_time_after_rally()
-                else: self.reset_cool_time()
+                
+                if self.prevent_cool_down_reset:
+                    self.prevent_cool_down_reset = False
+                elif self.current_rally_count > 0:
+                    self.set_extended_cool_time_after_rally()
+                else:
+                    self.reset_cool_time()
+                
                 self.current_rally_count = 0
-                if self.is_processing_lock.locked(): self.is_processing_lock.release()
+                if self.is_processing_lock.locked():
+                    self.is_processing_lock.release()
 
         if wav_data:
             def on_start_callback(): self.root.after(0, speaker.ui.emotion_handler.start_lip_sync, emotion_jp)
-            self.voicevox_manager.play_wav(wav_data, on_start=on_start_callback, on_finish=on_finish_callback)
+            speaker.voice_manager.play_wav(wav_data, on_start=on_start_callback, on_finish=on_finish_callback)
         else:
             on_finish_callback()
 
@@ -828,7 +995,10 @@ class DesktopMascot:
         try:
             self.reset_cool_time()
             self.is_in_rally, self.current_rally_count = False, 0
-            speaker = random.choice(self.characters)
+            speaker = self._select_speaker_by_frequency() # MODIFIED
+            if not speaker: # 話し手が見つからなかった場合
+                if self.is_processing_lock.locked(): self.is_processing_lock.release()
+                return
 
             topics_filepath = self.config.get('UI', 'AUTO_SPEECH_TOPICS_FILE', fallback='')
             topics = []
@@ -1024,7 +1194,29 @@ class DesktopMascot:
         # self.schedule_editor_window = ScheduleEditorWindow(parent_window, self.schedule_manager, self)
         # 最後の引数に character_controller を追加
         self.schedule_editor_window = ScheduleEditorWindow(parent_window, self.schedule_manager, self, target_char_for_theme)
+
+    def open_conversation_log_viewer(self, target_char):
+        """
+        指定されたキャラクターの会話ログ閲覧ウィンドウを開きます。
+        """
+        if not target_char:
+            return
+
+        char_id = target_char.original_id
         
+        # 既にウィンドウが開いている場合は、新しく開かずに最前面に表示する
+        if char_id in self.log_viewer_windows and self.log_viewer_windows[char_id].winfo_exists():
+            self.log_viewer_windows[char_id].lift()
+            return
+        
+        # 新しいウィンドウを生成
+        parent_window = target_char.ui if target_char.ui.winfo_exists() else self.root
+        
+        # 新しいConversationLogViewerを生成し、参照を辞書に保存
+        viewer = ConversationLogViewer(parent_window, self, target_char)
+        self.log_viewer_windows[char_id] = viewer
+
+
     def check_api_timeout(self):
         """APIリクエストのタイムアウトを監視します。"""
         if self.current_speaker_on_request and self.last_api_request_time:
@@ -1035,7 +1227,14 @@ class DesktopMascot:
                 
                 error_text = speaker.msg_on_api_timeout
                 emotion_jp = speaker.available_emotions.get('troubled', 'normal')
-                wav_data = self.voicevox_manager.generate_wav(error_text, speaker.speaker_id, emotion_jp, speaker.voice_params)
+
+                wav_data = self.voicevox_manager.generate_wav(
+                    error_text, 
+                    speaker.speaker_id, 
+                    emotion_jp, 
+                    speaker.voice_params,
+                    character_volume_percent=speaker.volume # speaker.volumeを渡す
+                )
                 self.root.after(0, self.perform_synchronized_update, speaker, error_text, wav_data, emotion_jp, False)
     
     def request_speech(self, speaker, text, message_type, situation=None):
@@ -1065,13 +1264,19 @@ class DesktopMascot:
         # このキャラクターの現在の状態で利用可能なツール設定を生成
         tools_config = self._create_tools_config_for_character(speaker)
 
+        # メッセージタイプに応じて使用するモデルを切り替えるマップ
         model_key_map = {
             "応答": 'pro' if self.is_pro_mode.get() else 'flash',
             "タッチ反応": 'flash-2',
             "衣装変更反応": 'flash-2',
             "スケジュール通知": 'flash',
-            "今日の予定通知": 'flash'
-            }
+            "今日の予定通知": 'flash',
+            "起動挨拶": 'flash-2',
+            "退去挨拶": 'flash-2',
+            "交代挨拶": 'flash-2',
+            "交代への反応": 'flash-2',
+            "終了挨拶": 'flash-2'
+        }
         model_key = model_key_map.get(message_type, 'flash-lite')
         
         self.gemini_handler.generate_response(
@@ -1117,18 +1322,26 @@ class DesktopMascot:
                 if char:
                     char.reload_api_settings(self.gemma_api_key, self.gemma_model_name, self.gemma_test_mode)
             
-            # 5. 新しい設定でVoicevoxManagerを更新
-            new_exe_path = self.config.get('VOICEVOX', 'exe_path')
-            new_api_url = self.config.get('VOICEVOX', 'api_url')
-            # VoicevoxManagerに新しい設定を渡して、内部状態を更新させる
-            self.voicevox_manager.reload_settings(new_exe_path, new_api_url)
+            # 5. グローバルな音声エンジン設定を再読み込み
+            # GlobalManagerに新しいconfigを渡す
+            self.global_voice_engine_manager.global_config = self.config
+            
+            # 6. 各エンジンにグローバル設定の再読み込みを指示
+            for engine in self.global_voice_engine_manager.running_engines.values():
+                 engine.reload_settings() # Engineクラスのreload_settingsを呼び出す
 
-            # 6. UIの表示を更新
+            # 7. 各キャラクターに設定再読み込みを指示
+            for char in self.characters:
+                if char:
+                    # このメソッドはCharacterControllerに新設する
+                    char.reload_config_and_services()
+
+            # 8. UIの表示を更新
             self.ui_manager.update_api_status_menu()
             
             print("設定の再読み込みが完了しました。")
             
-            # ユーザーにフィードバックを返す
+            # 9. ユーザーにフィードバックを返す
             char_to_notify = self.char1 if self.char1 and self.char1.ui.winfo_exists() else None
             if char_to_notify:
                 char_to_notify.ui.output_box.set_text("APIの設定を更新したよ！")
@@ -1200,4 +1413,9 @@ class DesktopMascot:
         if self.api_settings_window and self.api_settings_window.winfo_exists():
             self.api_settings_window.reload_theme()
             
+        # 4. ログビューアーが開いていれば、そちらも更新
+        for viewer in self.log_viewer_windows.values():
+            if viewer and viewer.winfo_exists():
+                viewer.reload_theme()
+
         print("UIテーマの再読み込みが完了しました。")

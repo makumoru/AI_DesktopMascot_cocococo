@@ -25,6 +25,22 @@ api_url = http://127.0.0.1:50021
 
 
 ; ======================================================================
+; ■■■ 任意設定 (AivisSpeech) ■■■
+; ======================================================================
+; AivisSpeech (A.I.VOICEのWeb APIラッパー) を使用する場合に設定します。
+[AIVIS_SPEECH]
+; --- AivisSpeechエンジンのパス ---
+; ご自身のPCにインストールしたAivisSpeechのエンジン本体「run.exe」のフルパスを指定してください。
+; パス区切り文字は「\」を「\\」のように2つ重ねてください。
+; (例) exe_path = C:\\Program Files\\AivisSpeech\\AivisSpeech-Engine\\run.exe
+exe_path = C:\\Program Files\\AivisSpeech\\AivisSpeech-Engine\\run.exe
+
+; --- APIのURL (通常は変更不要) ---
+; AivisSpeechエンジンのAPIアドレスです。通常はこのままで問題ありません。
+api_url = http://127.0.0.1:10101
+
+
+; ======================================================================
 ; ■■■ 2. 最初に設定する項目 (Google API) ■■■
 ; ======================================================================
 [GEMINI]
@@ -93,7 +109,7 @@ IS_LEFT_SIDE = False
 ; このキャラクターを有効にするか (True/False)。Falseにすると1人モードで起動します。
 ENABLED = False
 ; charactersフォルダ内のフォルダ名を指定
-DIRECTORY = ノワール
+DIRECTORY = 四国めたん
 ; 画面の左側に表示するかどうか (Trueにすると、キャラが左側に配置され画像が左右反転します)
 IS_LEFT_SIDE = True
 
@@ -107,7 +123,7 @@ IS_LEFT_SIDE = True
 ; キャラクターウィンドウの横幅を、プライマリスクリーン全体の幅に対する比率で指定します。
 ; 例: 0.2 は画面幅の20%のサイズになります。
 WINDOW_WIDTH_RATIO = 0.2
-; カラーテーマの種類(ファイル名で表記)
+;カラーテーマ
 theme = default_light
 ; 画像の透過色 (デフォルトではこの色を透明にします)。
 TRANSPARENT_COLOR = #ff00ff
