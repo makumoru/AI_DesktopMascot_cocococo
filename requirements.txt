@@ -1,0 +1,9 @@
+google-generativeai
+google-genai
+Pillow
+pynput
+pystray
+numpy
+requests
+mss
+pygetwindow
