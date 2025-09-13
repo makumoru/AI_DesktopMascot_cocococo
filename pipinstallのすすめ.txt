@@ -1,0 +1,7 @@
+以下のコマンドを実行してください。
+・まとめてインストール
+pip install -r requirements.txt
+
+
+・今入ってるものをリスト化
+pip freeze > requirements.txt
