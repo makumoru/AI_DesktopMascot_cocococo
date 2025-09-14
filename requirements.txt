@@ -1,0 +1,13 @@
+google-generativeai
+google-genai
+mss
+numpy
+Pillow
+pynput
+pystray
+numpy
+requests
+mss
+pygetwindow
+PyGetWindow
+tkinterdnd2-universal
