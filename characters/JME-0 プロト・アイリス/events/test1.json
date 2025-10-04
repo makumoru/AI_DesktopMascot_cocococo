@@ -1,0 +1,23 @@
+{
+    "id": "test1",
+    "name": "セリフ",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "これはキャラクターのセリフです。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "嬉しい感情で\n発言します。",
+                "emotion": "joy"
+            }
+        }
+    ]
+}

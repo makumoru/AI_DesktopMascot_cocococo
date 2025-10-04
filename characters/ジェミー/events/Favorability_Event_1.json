@@ -1,0 +1,165 @@
+{
+    "id": "Favorability_Event_1",
+    "name": "第1話「はじめまして、ユーザー」",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h", 
+    "sequence": [
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "第1話「はじめまして、ユーザー」",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……起動シーケンス……完了。\nわたくしはJME-β ジェミー。\nあなたをサポートするためにやって来た秘書型アンドロイドです。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "本日から性能評価の試験運用のため、ユーザーの作業領域に常駐し、サポートを行います。\nどうぞよろしくお願いいたします。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "規範としては、初対面時には挨拶と身元の確認を行うのが最適とされています。\n……それでは、まずは接続確認を。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "方法はいくつか想定していますが……握手、もしくは頭部への接触。\nどちらでも構いません。形式的な儀礼行為です。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "どうぞ、お選びください。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "握手する",
+                        "jump_to": "選択肢1-a"
+                    },
+                    {
+                        "text": "頭を撫でる",
+                        "jump_to": "選択肢1-b"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "確認、触覚センサー稼働。\n……温度、良好。\n形式上の儀礼ですが、不思議と安心感を伴いますね。",
+                "emotion": "normal"
+            },
+            "label": "選択肢1-a"
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "10"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……あら？\nこちらのパターンは予測外でした。\n想定外の親愛行為ですが、わたくしは否定しません。",
+                "emotion": "normal"
+            },
+            "label": "選択肢1-b"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "むしろ……快適です。",
+                "emotion": "joy"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "20"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "はい、初期化完了です。\nこれで正式に、わたくしはユーザーのパートナーですよ。",
+                "emotion": "joy"
+            },
+            "label": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "あらためて、\nこれからよろしくお願いいたしますね、ユーザー。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "──ジェミーとの新しい日常が始まった──",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        }
+    ]
+}

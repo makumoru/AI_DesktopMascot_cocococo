@@ -1,0 +1,52 @@
+{
+    "id": "test3",
+    "name": "選択肢",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "選択肢です。",
+                "options": [
+                    {
+                        "text": "選択肢A",
+                        "jump_to": "選択肢A"
+                    },
+                    {
+                        "text": "選択肢B",
+                        "jump_to": "選択肢B"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "選択肢Aです。",
+                "emotion": "normal"
+            },
+            "label": "選択肢A",
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "選択肢Bです。",
+                "emotion": "normal"
+            },
+            "label": "選択肢B",
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "各選択肢から合流します。",
+                "emotion": "normal"
+            },
+            "label": "合流"
+        }
+    ]
+}

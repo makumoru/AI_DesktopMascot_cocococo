@@ -1,0 +1,223 @@
+{
+    "id": "Favorability_Event_2",
+    "name": "第2話「余白のひととき」",
+    "triggers": [
+        [
+            {
+                "type": "favorability_above",
+                "flag": "",
+                "value": "50"
+            },
+            {
+                "type": "event_completed_after",
+                "event_id": "Favorability_Event_1",
+                "duration": "24h"
+            }
+        ]
+    ], 
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "第2話「余白のひととき」",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ユーザー、本日の予定を整理しました。\n最短経路で処理すれば、余剰時間は12分ほど生じますよ。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "黙々と効率性を最優先にお仕事を進められれば、さらに余剰時間を延ばすことも可能ではあるでしょう……",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……ですが、実は雑談にも生産性向上効果があるという説もあるんですよ？",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "規範に従えば、雑談といった無駄は削るべきものですが……\nユーザー、どういたしますか？",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "仕事優先で進める",
+                        "jump_to": "選択肢1-a"
+                    },
+                    {
+                        "text": "雑談してみる",
+                        "jump_to": "選択肢1-b"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "了解しました。\n効率性の徹底、わたくしは嫌いではありません。\nユーザーの癖を、少しずつ読めてきた気がします。",
+                "emotion": "normal"
+            },
+            "label": "選択肢1-a"
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "……黙々と仕事を進めた",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "はい、お仕事お疲れ様です。\nタスクは順調に進んでいますね。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "25"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "雑談……はい。\nわたくしたちAIには“好き”という感情は未定義ですが、今のやり取りは……悪くないと感じます。\n新しい定義候補に追加しておきましょう。",
+                "emotion": "joy"
+            },
+            "label": "選択肢1-b"
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "……ジェミーと雑談を楽しんだ",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "はい、お仕事お疲れ様です。\nタスクは順調に進んでいますね。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……なんだか、今日の余白は単なる余白以上の意味を持ったように思えます。\nありがとうございました。",
+                "emotion": "joy"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "50"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            },
+            "label": "合流"
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "──ジェミーとの時間を過ごした……──",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        }
+    ]
+}

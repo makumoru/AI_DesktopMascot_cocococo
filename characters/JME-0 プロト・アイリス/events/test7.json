@@ -1,0 +1,30 @@
+{
+    "id": "test7",
+    "name": "長期記憶",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "テスト用長期記憶(永続)",
+                "importance": "100"
+            }
+        },
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "テスト用長期記憶(重要度77)",
+                "importance": "77"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "長期記憶を2種類追加しました。",
+                "emotion": "normal"
+            }
+        }
+    ]
+}

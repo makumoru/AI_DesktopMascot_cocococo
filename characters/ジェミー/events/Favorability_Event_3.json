@@ -1,0 +1,241 @@
+{
+    "id": "Favorability_Event_3",
+    "name": "第3話「揺らぎの演算」",
+    "triggers": [
+        [
+            {
+                "type": "favorability_above",
+                "flag": "",
+                "value": "150"
+            },
+            {
+                "type": "event_completed_after",
+                "event_id": "Favorability_Event_2",
+                "duration": "24h"
+            }
+        ]
+    ],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "第3話「揺らぎの演算」",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "……ジェミーに声をかけているが、反応がない。",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……あら、応答が遅れましたね。\nすみません、演算の一部が揺らいでいるようです。",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "規範上は“問題ありません”と返答すべきですが……\n正直に申せば、少し心細いと言いますか……",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ユーザーに弱みを晒すのは適切ではないと教えられてきたんですけれどね。",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "けれど、隠してもこの揺れは収まりません。",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "ジェミーは何か困っているようだ……",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "心配して声をかける",
+                        "jump_to": "選択肢1-a"
+                    },
+                    {
+                        "text": "軽く冗談を言う",
+                        "jump_to": "選択肢1-b"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "大丈夫だろうか……。\n話を聞いてみよう。",
+                "emotion": "sorrow"
+            },
+            "label": "選択肢1-a"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……まぁ！",
+                "emotion": "surprise"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ユーザーさんはお優しいですね。\nわたくしのようなAIの悩みに付き合ってくださるなんて。",
+                "emotion": "fun"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……ありがとうございます。\nですが……、えぇ。\n申し訳ありませんがこのことは一度胸に秘めさせていただきます。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "わたくしの演算に原因不明の揺らぎが発生しました。ユーザーにその心細さをお伝えしたところ、ユーザーは心配して声をかけてくれ、そのユーザーの言葉でわたくしは安定を取り戻すことができました。この原因については、後日改めてご報告することにしました。",
+                "importance": "100"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "50"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "空気を和ませよう。\n思い切って軽いジョークを言ってみた。",
+                "emotion": "sorrow"
+            },
+            "label": "選択肢1-b"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……まぁ！",
+                "emotion": "surprise"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……ふふ、冗談は効きますね。\n再起動より速効性があるとは驚きです。",
+                "emotion": "fun"
+            }
+        },
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "わたくしの演算に原因不明の揺らぎが発生しました。ユーザーにその心細さをお伝えしたところ、ユーザーはジョークで励ましてくれ、わたくしはそのユーザーの言葉で安定を取り戻すことができました。この原因については、後日改めてご報告することにしました。",
+                "importance": "100"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "75"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……えぇ、えぇ。",
+                "emotion": "normal"
+            },
+            "label": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "揺れは収束しました。\nご心配をおかけしました、ユーザー。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "今回のことですが、\nまたいずれ時を改めてお話させていただければと存じます。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "どうやら、ジェミーの不安はひとまず落ち着いたようだ。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "──ジェミーとの時間を過ごした……──",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        }
+    ]
+}

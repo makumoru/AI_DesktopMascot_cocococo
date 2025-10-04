@@ -1,0 +1,23 @@
+{
+    "id": "test2",
+    "name": "モノローグ",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "monologue",
+            "params": {
+                "text": "モノローグです。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "怒りの感情をバックに\nモノローグです。",
+                "emotion": "anger"
+            }
+        }
+    ]
+}

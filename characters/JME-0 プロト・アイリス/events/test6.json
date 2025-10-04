@@ -1,0 +1,35 @@
+{
+    "id": "test6",
+    "name": "好感度操作",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "+100"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "好感度を\n+100\nしました。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "-50"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "好感度を\n-50\nしました。",
+                "emotion": "normal"
+            }
+        }
+    ]
+}

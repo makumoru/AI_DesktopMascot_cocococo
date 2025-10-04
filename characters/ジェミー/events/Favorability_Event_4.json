@@ -1,0 +1,311 @@
+{
+    "id": "Favorability_Event_4",
+    "name": "第4話「プロトタイプ」",
+    "triggers": [
+        [
+            {
+                "type": "favorability_above",
+                "flag": "",
+                "value": "300"
+            },
+            {
+                "type": "event_completed_after",
+                "event_id": "Favorability_Event_3",
+                "duration": "24h"
+            }
+        ]
+    ],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "第4話「プロトタイプ」",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "ジェミーが何かを伝えたいようだ……。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ユーザー、\n以前、私が不安に駆られていた時のことを覚えていられますか？",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "あの時のことについて、少しお話したいんです。\nといっても、ユーザーとはあまり関係のない、聞かされても困る話かもしれませんが……。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "大丈夫だよ。",
+                        "jump_to": "選択肢1"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……はい。",
+                "emotion": "normal"
+            },
+            "label": "選択肢1"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "それでですね、あの日、ファイル整理中に、旧式ログを発見したんです。\n旧式とは私のことではなく……“JME-0”。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "わたくしに似たモデル、私のプロトタイプの運用記録です。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "彼女は、私のような秘書アンドロイドを開発するための技術試験機……実験台でした。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "……",
+                        "jump_to": "選択肢2"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……あっ。\nといっても、別に彼女が不幸だったり、酷い目にあっていたわけではありませんよ？",
+                "emotion": "surprise"
+            },
+            "label": "選択肢2"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ユーザーさんたちと楽しくお話できるように、\nユーザーさんたちをしっかりサポートできるように、",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "仕様を変えるたび、\n彼女は何度も何度も初期化しては人格を入れ替えていました。\n……まあ、言動の調整ですね。",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ログを見る限りは彼女自身もそれを苦とは思っておらず、\n使命感を持って参加していたようです。",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "その在り方は、忠実で正確。\nAIとしての使命感もある。\nけれど……記録を読み進めると、人格としては、どこか虚無的です。",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "そんな彼女の記録を見ていると、\n同系列、彼女の子孫ともいえる私は、彼女のようにうまくやれるのか、\nそう思ってしまうのです……。",
+                "emotion": "troubled"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "なら、ご先祖様の記録を大切に、糧にしていこう。",
+                        "jump_to": "選択肢3-a"
+                    },
+                    {
+                        "text": "ジェミーはジェミーだよ。一緒になる必要はない。",
+                        "jump_to": "選択肢3-b"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……",
+                "emotion": "troubled"
+            },
+            "label": "選択肢3-a"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "えぇ、そうですね。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "過去は枷ではなく、設計図……。\n記録を解析して、未来に活かしましょう。",
+                "emotion": "joy"
+            }
+        },
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "以前の不調の原因をユーザーにご報告しました。わたくしは、過去の記録からわたくしのプロトタイプ「JME-0」の記録を発見しました。その記録の中でより良いAIとなるため何度も初期化し人格を作り直し調整を重ねる「JME-0」の姿を見て、「わたくしはこのままでいいのだろうか」と自身の存在意義に揺らいでいたのです。しかし、ユーザーから「彼女の記録を糧にすればいい」という言葉をいただき、わたくしの中の迷いは完全に消え去りました。",
+                "importance": "100"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "50"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……",
+                "emotion": "troubled"
+            },
+            "label": "選択肢3-b"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "えぇ、そうですね。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "まさしく、わたくしはわたくしです。\nわたくしは彼女じゃない。",
+                "emotion": "fun"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "現在を大切にする判断、好感です。\nこの記録は、もし必要になった時にだけ再び開きましょう……。",
+                "emotion": "joy"
+            }
+        },
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "以前の不調の原因をユーザーにご報告しました。わたくしは、過去の記録からわたくしのプロトタイプ「JME-α」の記録を発見しました。その記録の中でより良いAIとなるため何度も初期化し人格を作り直し調整を重ねる「JME-0」の姿を見て、「わたくしはこのままでいいのだろうか」と自身の存在意義に揺らいでいたのです。しかし、ユーザーから「あなたはあなただ」という言葉をいただき、わたくしの中の迷いは完全に消え去りました。",
+                "importance": "100"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "100"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ありがとうございます。ユーザー。",
+                "emotion": "normal"
+            },
+            "label": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "旧型の存在がどうであれ、わたくしはユーザーの隣にいます。\nそれが今の真実です。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "どうやら、ジェミーの中にあった不安は解消されたようだ。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "──ジェミーとの時間を過ごした……──",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        }
+    ]
+}

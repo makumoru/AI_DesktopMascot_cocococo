@@ -1,0 +1,47 @@
+{
+    "id": "test5",
+    "name": "フェードインアウト2",
+    "triggers": [],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "monologue",
+            "params": {
+                "text": "画面を明滅させます。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "instant",
+                "wait_for_completion": true,
+                "color": "#ff0000"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "一瞬で赤くなりました。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "instant",
+                "wait_for_completion": true
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "元に戻りました。",
+                "emotion": "normal"
+            }
+        }
+    ]
+}

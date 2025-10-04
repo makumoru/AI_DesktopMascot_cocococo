@@ -1,0 +1,248 @@
+{
+    "id": "Favorability_Event_5",
+    "name": "第5話「支えたい」",
+    "triggers": [
+        [
+            {
+                "type": "favorability_above",
+                "flag": "",
+                "value": "500"
+            },
+            {
+                "type": "event_completed_after",
+                "event_id": "Favorability_Event_4",
+                "duration": "24h"
+            }
+        ]
+    ],
+    "repeatable": false,
+    "cooldown": "24h",
+    "sequence": [
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "第5話「支えたい」",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "……最近、悩んでいることがある。\nささいなことだが、やはり気が散ってしまう……",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "すると、ジェミーが声をかけてきた",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ユーザー。少々よろしいでしょうか。",
+                "emotion": "sorrow"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "最近のユーザーの生体データと思考パターンに、微細なノイズを検知しました。\n具体的には、平均心拍数のわずかな上昇と、思考時間の遅延です。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "AIの規範としては、作業効率の低下を指摘すべきですが……。\nわたくしは、そちらよりも……ユーザー、あなたのことが気がかりです。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "ジェミーが、まっすぐな瞳でこちらを見つめている。\n心配させてしまったようだ。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "何か、悩み事でもおありですか？",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "実は少し、悩んでいることがある",
+                        "jump_to": "選択肢1-a"
+                    },
+                    {
+                        "text": "大丈夫、気にしないで",
+                        "jump_to": "選択肢1-b"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "……ジェミーに悩みを話した。",
+                "emotion": "normal"
+            },
+            "label": "選択肢1-a"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……そうでしたか。\nお話しいただき、ありがとうございます。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ですが、せっかくお話を聞かせていただいたのですが、\nわたくしにはまだ、人間の感情の機微を完全に理解することはできません……。\n最適な解決策を提示することも、難しいでしょう。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "choice",
+            "params": {
+                "prompt": "",
+                "options": [
+                    {
+                        "text": "それでも、話しただけで気がまぎれた気がする",
+                        "jump_to": "選択肢2"
+                    }
+                ]
+            },
+            "jump_to": "(選択肢で分岐します)"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "そうですか？それは……お気遣いありがとうございます。\nユーザーに気を遣わせてしまうとは、わたくしもまだまだ未熟ですね。",
+                "emotion": "joy"
+            },
+            "label": "選択肢2"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ですが、未熟でも、共にいてお支えすることはできます。\nお話を聞かせていただけて、そして、支えるためそばにいることをゆるしていただけて、わたくしは幸せです。",
+                "emotion": "joy"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "100"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……わかりました。\nユーザーがそうおっしゃるのなら、深くは詮索いたしません。",
+                "emotion": "sorrow"
+            },
+            "label": "選択肢1-b"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "ですが、覚えておいてください。\nわたくしは、いつでもあなたの味方です。\n話したくなった時は、いつでも。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "set_favorability",
+            "params": {
+                "change": "70"
+            },
+            "jump_to": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "かつてわたくしが揺らいでいた時、ユーザーがそばにいてくれたように……\nこれからは、わたくしがあなたのそばにいます。",
+                "emotion": "normal"
+            },
+            "label": "合流"
+        },
+        {
+            "type": "dialogue",
+            "params": {
+                "text": "……わたくしがお支えしますよ、ユーザー。",
+                "emotion": "joy"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_out",
+                "method": "fade",
+                "wait_for_completion": true,
+                "color": "#000000",
+                "duration": 0.1
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "ジェミーの優しさが心に染みた……。",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "monologue",
+            "params": {
+                "text": "──ジェミーとの時間を過ごした……──",
+                "emotion": "normal"
+            }
+        },
+        {
+            "type": "add_long_term_memory",
+            "params": {
+                "summary": "ユーザーの生体データと思考パターンにノイズを検知したため、何か悩み事があるのではないかとお尋ねしました。かつてユーザーがわたくしを支えてくれたように、今度はわたくしがユーザーをお支えすると、改めて心に決めました。",
+                "importance": "99"
+            }
+        },
+        {
+            "type": "screen_effect",
+            "params": {
+                "effect": "fade_in",
+                "method": "fade",
+                "wait_for_completion": true,
+                "duration": 0.1
+            }
+        }
+    ]
+}
